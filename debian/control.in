@@ -1,0 +1,222 @@
+Source: rhythmbox
+Section: gnome
+Priority: optional
+Maintainer: Debian GNOME Maintainers <pkg-gnome-maintainers@lists.alioth.debian.org>
+Uploaders: @GNOME_TEAM@
+Build-Depends: debhelper-compat (= 12),
+               dh-exec,
+               dh-python (>= 1.20130903),
+               gnome-pkg-tools (>= 0.6),
+               libgirepository1.0-dev (>= 0.10.0),
+               gobject-introspection (>= 0.10.0),
+               intltool (>= 0.35.0),
+               libgtk-3-dev (>= 3.20.0),
+               libgstreamer1.0-dev (>= 1.4.0),
+               libgstreamer-plugins-base1.0-dev (>= 1.4.0),
+               libgdk-pixbuf-2.0-dev (>= 2.18.0) | libgdk-pixbuf2.0-dev (>= 2.18.0),
+               libglib2.0-dev (>= 2.38.0),
+               libgpod-dev (>= 0.8.2-4) [!hurd-i386],
+               libtotem-plparser-dev (>= 3.2),
+               libsoup2.4-dev (>= 2.42.0),
+               libgudev-1.0-dev (>= 143) [linux-any],
+               libmtp-dev (>= 0.3.0),
+               libnotify-dev (>= 0.7.0),
+               libbrasero-media3-dev (>= 2.31.5) [!hurd-i386],
+               libwebkit2gtk-4.0-dev,
+               libsecret-1-dev (>= 0.18),
+               libpeas-dev (>= 0.7.3),
+               yelp-tools,
+               x11proto-core-dev,
+               liblircclient-dev,
+               gtk-doc-tools (>= 1.4),
+               python3-dev (>= 3.2.3),
+               python-gi-dev,
+               libdmapsharing-3.0-dev (>= 2.9.19),
+               libjson-glib-dev,
+               libgrilo-0.3-dev (>= 0.3.0),
+               libxml2-dev (>= 2.7.8),
+               libtdb-dev (>= 1.2.6),
+               pkg-config,
+Build-Depends-Indep: docbook-xsl (>= 1.54.1),
+                     docbook-utils (>= 0.6.11),
+                     libglib2.0-doc,
+                     libgtk-3-doc,
+                     libpango1.0-doc,
+                     libgdk-pixbuf2.0-doc,
+Build-Conflicts: libmusicbrainz3-dev
+Standards-Version: 4.5.0
+Vcs-Git: https://salsa.debian.org/gnome-team/rhythmbox.git
+Vcs-Browser: https://salsa.debian.org/gnome-team/rhythmbox
+Homepage: https://wiki.gnome.org/Apps/Rhythmbox
+
+Package: rhythmbox
+Architecture: any
+Depends: ${misc:Depends},
+         ${shlibs:Depends},
+         ${python3:Depends},
+         rhythmbox-data (>= ${source:Version}),
+         librhythmbox-core10 (= ${binary:Version}),
+         dbus,
+         gstreamer1.0-plugins-base (>= 1.4.0),
+         gstreamer1.0-plugins-good (>= 1.4.0),
+         gstreamer1.0-x,
+         media-player-info [linux-any]
+Recommends: yelp,
+            avahi-daemon,
+            notification-daemon,
+            gstreamer1.0-pulseaudio,
+            gstreamer1.0-plugins-ugly,
+            gvfs-backends,
+            rhythmbox-plugins
+Suggests: gstreamer1.0-plugins-bad,
+          gnome-codec-install,
+          gnome-control-center,
+          rhythmbox-plugin-cdrecorder
+Description: music player and organizer for GNOME
+ Rhythmbox is a very easy to use music playing and management program
+ which supports a wide range of audio formats (including mp3 and ogg).
+ Originally inspired by Apple's iTunes, the current version also supports
+ Internet Radio, iPod integration and generic portable audio player
+ support, Audio CD burning, Audio CD playback, music sharing, and
+ Podcasts.
+
+Package: rhythmbox-data
+Architecture: all
+Multi-Arch: foreign
+Depends: ${misc:Depends},
+Recommends: rhythmbox
+Description: data files for rhythmbox
+ Rhythmbox is a very easy to use music playing and management program
+ which supports a wide range of audio formats (including mp3 and ogg).
+ Originally inspired by Apple's iTunes, the current version also supports
+ Internet Radio, iPod integration and generic portable audio player
+ support, Audio CD burning, Audio CD playback, music sharing, and
+ Podcasts.
+ .
+ This package contains pictures, localization files and other data
+ needed by rhythmbox.
+
+Package: rhythmbox-plugins
+Architecture: any
+Depends: ${misc:Depends},
+         ${shlibs:Depends},
+         ${python3:Depends},
+         rhythmbox (= ${binary:Version}),
+         librhythmbox-core10 (= ${binary:Version}),
+         gir1.2-rb-3.0 (= ${binary:Version}),
+         gir1.2-glib-2.0,
+         gir1.2-gtk-3.0,
+         gir1.2-webkit2-4.0,
+         gir1.2-peas-1.0,
+         gir1.2-gstreamer-1.0,
+         gir1.2-secret-1,
+         python3-gi,
+         python3-mako
+Description: plugins for rhythmbox music player
+ Rhythmbox is a very easy to use music playing and management program
+ which supports a wide range of audio formats (including mp3 and ogg).
+ Originally inspired by Apple's iTunes, the current version also supports
+ Internet Radio, iPod integration and generic portable audio player
+ support, Audio CD burning, Audio CD playback, music sharing, and
+ Podcasts.
+ .
+ This package contains the following plugins:
+  - Cover art search
+  - Audio CD Player
+  - Last.fm
+  - DAAP Music Sharing
+  - FM Radio
+  - Grilo media browser
+  - IM Status
+  - Internet Radio
+  - Song Lyrics
+  - Magnatune Store
+  - Media Player Keys
+  - Portable Players (generic, iPod, MTP)
+  - Notification
+  - Power Manager
+  - Python Console
+  - LIRC
+  - Replay Gain
+  - Soundcloud
+  - MediaServer2 D-Bus interface
+  - MPRIS D-Bus interface
+  - Browser plugin to integrate Rhythmbox with iTunes
+  - Web remote control
+
+Package: rhythmbox-plugin-cdrecorder
+Architecture: linux-any kfreebsd-any
+Depends: ${misc:Depends},
+         ${shlibs:Depends},
+         rhythmbox (= ${binary:Version})
+Description: burning plugin for rhythmbox music player
+ Rhythmbox is a very easy to use music playing and management program
+ which supports a wide range of audio formats (including mp3 and ogg).
+ Originally inspired by Apple's iTunes, the current version also supports
+ Internet Radio, iPod integration and generic portable audio player
+ support, Audio CD burning, Audio CD playback, music sharing, and
+ Podcasts.
+ .
+ This package contains the brasero based CD/DVD burning plugin.
+
+Package: librhythmbox-core10
+Section: libs
+Architecture: any
+Multi-Arch: same
+Depends: ${misc:Depends},
+         ${shlibs:Depends}
+Description: support library for the rhythmbox music player
+ Rhythmbox is a very easy to use music playing and management program
+ which supports a wide range of audio formats (including mp3 and ogg).
+ .
+ This package contains the core support library used by rhythmbox and
+ programs interacting with it.
+
+Package: rhythmbox-dev
+Section: libdevel
+Architecture: any
+Multi-Arch: same
+Depends: ${misc:Depends},
+         ${shlibs:Depends},
+         librhythmbox-core10 (= ${binary:Version}),
+         gir1.2-rb-3.0 (= ${binary:Version}),
+         libglib2.0-dev (>= 2.38.0),
+         libgtk-3-dev (>= 3.20.0),
+         libsoup2.4-dev,
+         libtotem-plparser-dev,
+         libgstreamer1.0-dev
+Suggests: rhythmbox-doc
+Description: development files for the rhythmbox music player
+ Rhythmbox is a very easy to use music playing and management program
+ which supports a wide range of audio formats (including mp3 and ogg).
+ .
+ This package contains the development headers and libraries needed to
+ build rhythmbox plugins.
+
+Package: rhythmbox-doc
+Section: doc
+Architecture: all
+Multi-Arch: foreign
+Depends: ${misc:Depends}
+Suggests: devhelp
+Description: documentation files for the rhythmbox music player
+ Rhythmbox is a very easy to use music playing and management program
+ which supports a wide range of audio formats (including mp3 and ogg).
+ .
+ This package contains the API documentation.
+
+Package: gir1.2-rb-3.0
+Section: introspection
+Architecture: any
+Multi-Arch: same
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+         ${gir:Depends}
+Provides: gir1.2-mpid-3.0 (= ${binary:Version})
+Description: GObject introspection data for the rhythmbox music player
+ Rhythmbox is a very easy to use music playing and management program
+ which supports a wide range of audio formats (including mp3 and ogg).
+ .
+ This package contains introspection data for the Rhythmbox core support
+ libraries. It can be used to write and execute plugins for rhythmbox in
+ interpreted languages supporting it.

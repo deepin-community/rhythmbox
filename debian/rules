@@ -1,0 +1,38 @@
+#!/usr/bin/make -f
+
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+export DEB_LDFLAGS_MAINT_APPEND = -Wl,-O1 -Wl,--as-needed
+
+%:
+	dh $@ --with gir,gnome,python3
+
+override_dh_autoreconf:
+	dh_autoreconf --as-needed ./autogen.sh
+
+ifeq ($(DEB_HOST_ARCH_OS),linux)
+CONFFLAGS = --with-gudev
+else
+CONFFLAGS = --without-gudev
+endif
+
+override_dh_auto_configure:
+	dh_auto_configure -- \
+		--enable-lirc \
+		--enable-gtk-doc \
+		$(CONFFLAGS)
+
+override_dh_install:
+	find debian/tmp -name '*.a' -delete -print
+	find debian/tmp -name '*.la' -delete -print
+	dh_install -Xsample-plugins -Xcontext
+
+override_dh_missing:
+	dh_missing --fail-missing -Xsample-plugins -Xcontext -Xrbzeitgeist
+
+override_dh_python3:
+	dh_python3 --no-ext-rename /usr/lib/$(DEB_HOST_MULTIARCH)/rhythmbox
+
+override_dh_makeshlibs:
+	dh_makeshlibs -prhythmbox-plugins --no-act
+	dh_makeshlibs -prhythmbox-plugin-cdrecorder --no-act
+	dh_makeshlibs --remaining-packages -V -- -c4

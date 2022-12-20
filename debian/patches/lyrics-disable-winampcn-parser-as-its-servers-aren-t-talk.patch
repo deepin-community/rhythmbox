@@ -1,0 +1,32 @@
+From: crvi <crvisqr@gmail.com>
+Date: Wed, 23 Sep 2020 00:09:00 +0530
+Subject: lyrics: disable winampcn parser as its servers aren't talking
+
+Bug: https://gitlab.gnome.org/GNOME/rhythmbox/-/issues/1829
+Origin: upstream, 3.4.5, commit:a25dc62723c2119047d769238e44defe1bc63429
+---
+ plugins/lyrics/LyricsSites.py | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/plugins/lyrics/LyricsSites.py b/plugins/lyrics/LyricsSites.py
+index d680219..ab24e18 100644
+--- a/plugins/lyrics/LyricsSites.py
++++ b/plugins/lyrics/LyricsSites.py
+@@ -26,7 +26,7 @@
+ 
+ 
+ #from AstrawebParser import AstrawebParser
+-from WinampcnParser import WinampcnParser
++#from WinampcnParser import WinampcnParser
+ from TerraParser import TerraParser
+ from DarkLyricsParser import DarkLyricsParser
+ from JlyricParser import JlyricParser
+@@ -39,7 +39,7 @@ gettext.install('rhythmbox', RB.locale_dir())
+ 
+ lyrics_sites = [
+ 	#{ 'id': 'astraweb.com', 	'class': AstrawebParser, 	'name': _("Astraweb (www.astraweb.com)") 	},
+-	{ 'id': 'winampcn.com', 	'class': WinampcnParser, 	'name': _("WinampCN (www.winampcn.com)") 	},
++	#{ 'id': 'winampcn.com', 	'class': WinampcnParser, 	'name': _("WinampCN (www.winampcn.com)") 	},
+ 	{ 'id': 'terra.com.br',		'class': TerraParser,		'name': _("TerraBrasil (terra.com.br)")		},
+ 	{ 'id': 'darklyrics.com',	'class': DarkLyricsParser,	'name': _("Dark Lyrics (darklyrics.com)")	},
+ 	{ 'id': 'j-lyric.net', 		'class': JlyricParser, 		'name': _("Jlyric (j-lyric.net)") 		},

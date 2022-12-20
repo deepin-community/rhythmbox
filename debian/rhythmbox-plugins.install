@@ -1,0 +1,37 @@
+#!/usr/bin/dh-exec
+[linux-any] usr/lib/*/rhythmbox/plugins/android
+usr/lib/*/rhythmbox/plugins/artsearch
+usr/lib/*/rhythmbox/plugins/audiocd
+usr/lib/*/rhythmbox/plugins/audioscrobbler
+usr/share/rhythmbox/plugins/audioscrobbler
+#usr/lib/*/rhythmbox/plugins/context
+#usr/share/rhythmbox/plugins/context
+usr/lib/*/rhythmbox/plugins/daap
+usr/lib/*/rhythmbox/plugins/dbus-media-server
+[!hurd-i386] usr/lib/*/rhythmbox/plugins/fmradio
+usr/lib/*/rhythmbox/plugins/generic-player
+usr/lib/*/rhythmbox/plugins/grilo
+usr/lib/*/rhythmbox/plugins/im-status
+[!hurd-i386] usr/lib/*/rhythmbox/plugins/ipod
+usr/lib/*/rhythmbox/plugins/iradio
+usr/lib/*/rhythmbox/plugins/listenbrainz
+usr/share/rhythmbox/plugins/listenbrainz
+usr/lib/*/rhythmbox/plugins/lyrics
+usr/share/rhythmbox/plugins/lyrics
+usr/lib/*/rhythmbox/plugins/magnatune
+usr/share/rhythmbox/plugins/magnatune
+usr/lib/*/rhythmbox/plugins/mmkeys
+usr/lib/*/rhythmbox/plugins/mpris
+[linux-any] usr/lib/*/rhythmbox/plugins/mtpdevice
+usr/lib/*/rhythmbox/plugins/notification
+usr/lib/*/rhythmbox/plugins/power-manager
+usr/lib/*/rhythmbox/plugins/python-console
+usr/lib/*/rhythmbox/plugins/rb
+usr/lib/*/rhythmbox/plugins/rblirc
+usr/share/rhythmbox/plugins/rblirc
+usr/lib/*/rhythmbox/plugins/replaygain
+usr/share/rhythmbox/plugins/replaygain
+usr/lib/*/rhythmbox/plugins/soundcloud
+usr/share/rhythmbox/plugins/soundcloud
+usr/lib/*/rhythmbox/plugins/webremote
+usr/share/rhythmbox/plugins/webremote

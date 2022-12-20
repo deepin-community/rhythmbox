@@ -1,0 +1,7 @@
+plugins-Update-website-links.patch
+Fix-broken-application-icon-in-About-dialog.patch
+update-app-icon-name.patch
+use-RB_APP_ICON-instead-of-hardcoding-icon-names.patch
+lyrics-disable-winampcn-parser-as-its-servers-aren-t-talk.patch
+git_xfade_gstreamer.patch
+multiarch_fallback.patch
