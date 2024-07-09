@@ -1,33 +1,32 @@
 #!/usr/bin/make -f
 
 export DEB_BUILD_MAINT_OPTIONS = hardening=+all
-export DEB_LDFLAGS_MAINT_APPEND = -Wl,-O1 -Wl,--as-needed
+export DEB_LDFLAGS_MAINT_APPEND = -Wl,-O1
 
 %:
-	dh $@ --with gir,gnome,python3
+	dh $@
 
-override_dh_autoreconf:
-	dh_autoreconf --as-needed ./autogen.sh
-
-ifeq ($(DEB_HOST_ARCH_OS),linux)
-CONFFLAGS = --with-gudev
-else
-CONFFLAGS = --without-gudev
+ifneq ($(DEB_HOST_ARCH_OS),linux)
+CONFFLAGS = -Dgudev=disabled
 endif
 
 override_dh_auto_configure:
 	dh_auto_configure -- \
-		--enable-lirc \
-		--enable-gtk-doc \
+		-Dauto_features=enabled \
+		-Ddaap=enabled \
+		-Dgtk_doc=true \
+		-Dplugins_vala=disabled \
 		$(CONFFLAGS)
 
-override_dh_install:
-	find debian/tmp -name '*.a' -delete -print
-	find debian/tmp -name '*.la' -delete -print
-	dh_install -Xsample-plugins -Xcontext
+override_dh_auto_test:
+	xvfb-run dh_auto_test -- --timeout-multiplier 3
 
+# This plugin was dropped from the Debian package years ago
+# It would need to depend on zeitgeist to be useful
+# So we'd probably want to add a separate binary package
+# since zeitgeist isn't something we need by default these days
 override_dh_missing:
-	dh_missing --fail-missing -Xsample-plugins -Xcontext -Xrbzeitgeist
+	dh_missing -Xrbzeitgeist
 
 override_dh_python3:
 	dh_python3 --no-ext-rename /usr/lib/$(DEB_HOST_MULTIARCH)/rhythmbox
@@ -35,4 +34,6 @@ override_dh_python3:
 override_dh_makeshlibs:
 	dh_makeshlibs -prhythmbox-plugins --no-act
 	dh_makeshlibs -prhythmbox-plugin-cdrecorder --no-act
-	dh_makeshlibs --remaining-packages -V -- -c4
+	dh_makeshlibs --remaining-packages
+
+override_dh_gnome_clean:

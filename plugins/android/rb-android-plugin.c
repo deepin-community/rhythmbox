@@ -26,11 +26,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301  USA.
  */
 
-#define __EXTENSIONS__
-
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include <string.h> /* For strlen */
 #include <glib/gi18n-lib.h>
@@ -54,23 +50,19 @@
 
 
 #define RB_TYPE_ANDROID_PLUGIN		(rb_android_plugin_get_type ())
-#define RB_ANDROID_PLUGIN(o)		(G_TYPE_CHECK_INSTANCE_CAST ((o), RB_TYPE_ANDROID_PLUGIN, RBAndroidPlugin))
-#define RB_ANDROID_PLUGIN_CLASS(k)	(G_TYPE_CHECK_CLASS_CAST((k), RB_TYPE_ANDROID_PLUGIN, RBAndroidPluginClass))
-#define RB_IS_ANDROID_PLUGIN(o)		(G_TYPE_CHECK_INSTANCE_TYPE ((o), RB_TYPE_ANDROID_PLUGIN))
-#define RB_IS_ANDROID_PLUGIN_CLASS(k)	(G_TYPE_CHECK_CLASS_TYPE ((k), RB_TYPE_ANDROID_PLUGIN))
-#define RB_ANDROID_PLUGIN_GET_CLASS(o)	(G_TYPE_INSTANCE_GET_CLASS ((o), RB_TYPE_ANDROID_PLUGIN, RBAndroidPluginClass))
+G_DECLARE_FINAL_TYPE (RBAndroidPlugin, rb_android_plugin, RB, ANDROID_PLUGIN, PeasExtensionBase)
 
-typedef struct
+struct _RBAndroidPlugin
 {
 	PeasExtensionBase parent;
 
 	GList *sources;
-} RBAndroidPlugin;
+};
 
-typedef struct
+struct _RBAndroidPluginClass
 {
 	PeasExtensionBaseClass parent_class;
-} RBAndroidPluginClass;
+};
 
 
 G_MODULE_EXPORT void peas_register_types (PeasObjectModule  *module);
@@ -124,11 +116,7 @@ create_source_cb (RBRemovableMediaManager *rmm, GVolume *volume, RBAndroidPlugin
 		return NULL;
 	}
 
-#if defined(USE_UNINSTALLED_DIRS)
-	mpi_file = rb_find_plugin_data_file (G_OBJECT (plugin), "android.mpi");
-#else
 	mpi_file = "/org/gnome/Rhythmbox/android/android.mpi";
-#endif
 	device_info = mpid_device_new_from_mpi_file (mpi_file);
 
 	path = g_volume_get_identifier (volume, G_VOLUME_IDENTIFIER_KIND_UNIX_DEVICE);

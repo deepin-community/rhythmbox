@@ -36,6 +36,7 @@
 #include "rb-builder-helpers.h"
 #include "rb-debug.h"
 #include "rb-util.h"
+#include "rb-text-helpers.h"
 #include "rb-cut-and-paste-code.h"
 #include "rb-search-entry.h"
 #include "rhythmdb-entry-type.h"
@@ -431,7 +432,7 @@ current_folder_changed_cb (GtkFileChooser *chooser, RBImportDialog *dialog)
 	locations = g_settings_get_strv (settings, "locations");
 	gtk_widget_set_sensitive (dialog->priv->copy_check, TRUE);
 	for (i = 0; locations[i] != NULL; i++) {
-		if (g_str_has_prefix (uri, locations[i])) {
+		if ((g_strcmp0 (uri, locations[i]) == 0) || rb_uri_is_descendant (uri, locations[i])) {
 			gtk_widget_set_sensitive (dialog->priv->copy_check, FALSE);
 			break;
 		}
@@ -469,6 +470,9 @@ update_status_idle (RBImportDialog *dialog)
 	}
 	text = g_strdup_printf (fmt, count);
 	gtk_button_set_label (GTK_BUTTON (dialog->priv->import_button), text);
+	/* a new child label is created each time button label is set */
+	gtk_label_set_attributes (GTK_LABEL (gtk_bin_get_child (GTK_BIN (dialog->priv->import_button))),
+				  rb_text_numeric_get_pango_attr_list ());
 	g_free (text);
 
 	/* hack to get these strings marked for translation */
@@ -524,6 +528,7 @@ selection_changed_cb (RBEntryView *view, RBImportDialog *dialog)
 static void
 impl_constructed (GObject *object)
 {
+	GtkStyleContext *context;
 	RBImportDialog *dialog;
 	RhythmDBQuery *query;
 	GtkBuilder *builder;
@@ -554,6 +559,8 @@ impl_constructed (GObject *object)
 	builder = rb_builder_load ("import-dialog.ui", NULL);
 
 	dialog->priv->import_button = GTK_WIDGET (gtk_builder_get_object (builder, "import-button"));
+	context = gtk_widget_get_style_context (GTK_WIDGET (dialog->priv->import_button));
+	gtk_style_context_add_class (context, GTK_STYLE_CLASS_SUGGESTED_ACTION);
 	g_signal_connect_object (dialog->priv->import_button, "clicked", G_CALLBACK (import_clicked_cb), dialog, 0);
 	gtk_widget_set_sensitive (dialog->priv->import_button, FALSE);
 

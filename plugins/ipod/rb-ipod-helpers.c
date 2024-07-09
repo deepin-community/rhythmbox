@@ -28,9 +28,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301  USA.
  */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include <string.h>
 
@@ -327,6 +325,32 @@ rb_ipod_helpers_mount_has_ipod_db (GMount *mount)
         return result;
 }
 
+AfcUriStatus
+rb_ipod_helpers_afc_uri_parse (const gchar *uri_str)
+{
+	GUri *uri;
+	gint port;
+
+	uri = g_uri_parse (uri_str, G_URI_FLAGS_NONE, NULL);
+	if (uri == NULL) {
+		rb_debug ("Invalid afc uri: '%s'", uri_str);
+		return AFC_URI_INVALID;
+	}
+	/* Skip scheme check, as it's done in the caller */
+	port = g_uri_get_port (uri);
+	g_uri_unref (uri);
+
+	if (port == -1) {
+		rb_debug ("afc uri '%s' is an ipod", uri_str);
+		return AFC_URI_IS_IPOD;
+	} else if (port >= VIRTUAL_PORT_MIN && port <= VIRTUAL_PORT_MAX) {
+		rb_debug ("afc uri '%s' %s ipod", uri_str, port == VIRTUAL_PORT_AFC ? "is" : "is not");
+		return (port == VIRTUAL_PORT_AFC ? AFC_URI_IS_IPOD : AFC_URI_NOT_IPOD);
+	}
+	rb_debug ("Unknown port %d in afc uri: '%s'", port, uri_str);
+	return AFC_URI_PORT_UNKNOWN;
+}
+
 gboolean
 rb_ipod_helpers_is_ipod (GMount *mount, MPIDDevice *device_info)
 {
@@ -354,15 +378,10 @@ rb_ipod_helpers_is_ipod (GMount *mount, MPIDDevice *device_info)
 
 			if (g_file_has_uri_scheme (root, "afc") != FALSE) {
 				gchar *uri;
+				AfcUriStatus status;
 				uri = g_file_get_uri (root);
-				/* afc://<40 chars>:stuff */
-				g_assert (strlen (uri) >= 46);
-				if (uri[6 + 40] == ':' &&
-				    uri[6 + 40 + 1] != '1') {
-					result = FALSE;
-				} else {
-					result = TRUE;
-				}
+				status = rb_ipod_helpers_afc_uri_parse (uri);
+				result = (status == AFC_URI_IS_IPOD);
 				g_free (uri);
 			} else {
 				gchar *mount_point;

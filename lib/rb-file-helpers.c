@@ -63,21 +63,10 @@ static char *dot_dir = NULL;
 static char *user_data_dir = NULL;
 static char *user_cache_dir = NULL;
 
-static char *uninstalled_paths[] = {
-	SHARE_UNINSTALLED_DIR "/",
-	SHARE_UNINSTALLED_DIR "/ui/",
-	SHARE_UNINSTALLED_BUILDDIR "/",
-	SHARE_UNINSTALLED_BUILDDIR "/ui/",
-	SHARE_DIR "/",
-	NULL
-};
-
 static char *installed_paths[] = {
 	SHARE_DIR "/",
 	NULL
 };
-
-static char **search_paths;
 
 static const char *recurse_attributes =
 		G_FILE_ATTRIBUTE_STANDARD_NAME ","
@@ -121,8 +110,8 @@ rb_file (const char *filename)
 	if (ret != NULL)
 		return ret;
 
-	for (i = 0; search_paths[i] != NULL; i++) {
-		ret = g_strconcat (search_paths[i], filename, NULL);
+	for (i = 0; installed_paths[i] != NULL; i++) {
+		ret = g_strconcat (installed_paths[i], filename, NULL);
 		if (g_file_test (ret, G_FILE_TEST_EXISTS) == TRUE) {
 			g_hash_table_insert (files, g_strdup (filename), ret);
 			return (const char *) ret;
@@ -275,8 +264,12 @@ rb_find_plugin_data_file (GObject *object, const char *name)
 		}
 	}
 
-	rb_debug ("found '%s' when searching for file '%s' for plugin '%s'",
-		  ret, name, plugin_name);
+	if (ret == NULL) {
+		rb_debug ("didn't find file '%s' for plugin '%s'", name, plugin_name);
+	} else {
+		rb_debug ("found '%s' when searching for file '%s' for plugin '%s'",
+			  ret, name, plugin_name);
+	}
 
 	/* ensure it's an absolute path */
 	if (ret != NULL && ret[0] != '/') {
@@ -316,19 +309,12 @@ rb_find_plugin_resource (GObject *object, const char *name)
 
 /**
  * rb_file_helpers_init:
- * @uninstalled: if %TRUE, search in source and build directories
- * as well as installed locations
  *
  * Sets up file search paths for @rb_file.  Must be called on startup.
  */
 void
-rb_file_helpers_init (gboolean uninstalled)
+rb_file_helpers_init (void)
 {
-	if (uninstalled)
-		search_paths = uninstalled_paths;
-	else
-		search_paths = installed_paths;
-
 	files = g_hash_table_new_full (g_str_hash,
 				       g_str_equal,
 				       (GDestroyNotify) g_free,
@@ -1102,6 +1088,7 @@ rb_uri_mkstemp (const char *prefix, char **uri_ret, GOutputStream **stream, GErr
 		*stream = G_OUTPUT_STREAM (fstream);
 		return TRUE;
 	} else {
+		g_propagate_error (error, e);
 		g_free (uri);
 		return FALSE;
 	}
@@ -1379,34 +1366,6 @@ rb_uri_get_mount_point (const char *uri)
 	return mountpoint;
 }
 
-static gboolean
-check_file_is_directory (GFile *file, GError **error)
-{
-	GFileInfo *info;
-
-	info = g_file_query_info (file, G_FILE_ATTRIBUTE_STANDARD_TYPE, G_FILE_QUERY_INFO_NONE, NULL, error);
-	if (*error == NULL) {
-		/* check it's a directory */
-		GFileType filetype;
-		gboolean ret = TRUE;
-
-		filetype = g_file_info_get_attribute_uint32 (info, G_FILE_ATTRIBUTE_STANDARD_TYPE);
-		if (filetype != G_FILE_TYPE_DIRECTORY) {
-			/* um.. */
-			ret = FALSE;
-		}
-
-		g_object_unref (info);
-		return ret;
-	}
-
-	if (g_error_matches (*error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND)) {
-		g_clear_error (error);
-	}
-	return FALSE;
-}
-
-
 /**
  * rb_uri_create_parent_dirs:
  * @uri: a URI for which to create parent directories
@@ -1423,6 +1382,7 @@ rb_uri_create_parent_dirs (const char *uri, GError **error)
 	GFile *file;
 	GFile *parent;
 	gboolean ret;
+	GError *err = NULL;
 
 	/* ignore internal URI schemes */
 	if (g_str_has_prefix (uri, "xrb")) {
@@ -1437,9 +1397,14 @@ rb_uri_create_parent_dirs (const char *uri, GError **error)
 		return TRUE;
 	}
 
-	ret = check_file_is_directory (parent, error);
-	if (ret == FALSE && *error == NULL) {
-		ret = g_file_make_directory_with_parents (parent, NULL, error);
+	ret = g_file_make_directory_with_parents (parent, NULL, &err);
+	if (err != NULL) {
+		if (g_error_matches (err, G_IO_ERROR, G_IO_ERROR_EXISTS)) {
+			g_error_free (err);
+			ret = TRUE;
+		} else {
+			g_propagate_error (error, err);
+		}
 	}
 
 	g_object_unref (parent);
@@ -1477,6 +1442,48 @@ rb_file_find_extant_parent (GFile *file)
 	}
 
 	return file;
+}
+
+/**
+ * rb_uri_is_descendant:
+ * @uri: URI to check
+ * @ancestor: a URI to check against
+ *
+ * Checks if @uri refers to a path beneath @ancestor, such that removing some number
+ * of path segments of @uri would result in @ancestor.
+ * It doesn't do any filesystem operations, it just looks at the URIs as strings.
+ * The URI strings should be built by looking at a filesystem rather than user input,
+ * and must not have path segments that are empty (multiple slashes) or '.' or '..'.
+ *
+ * Given this input, checking if one URI is a descendant of another is pretty simple.
+ * A descendant URI must have the ancestor as a prefix, and if the ancestor ends with
+ * a slash, there must be at least one character after that, otherwise the following
+ * character must be a slash with at least one character after it.
+ *
+ * Return value: %TRUE if @uri is a descendant of @ancestor
+ */
+gboolean
+rb_uri_is_descendant (const char *uri, const char *ancestor)
+{
+	int len;
+
+	if (g_str_has_prefix (uri, ancestor) == FALSE)
+		return FALSE;
+
+	len = strlen(ancestor);
+	if (ancestor[len - 1] == '/') {
+		/*
+		 * following character in uri must be a new path segment, not
+		 * the end of the uri.  not considering multiple slashes here.
+		 */
+		return (uri[len] != '\0');
+	} else {
+		/*
+		 * following character in uri must be a separator, with something after it.
+		 * not considering multiple slashes here.
+		 */
+		return ((uri[len] == '/') && strlen(uri) > (len + 1));
+	}
 }
 
 /**

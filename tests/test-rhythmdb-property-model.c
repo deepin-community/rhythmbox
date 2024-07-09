@@ -38,6 +38,9 @@
 #include "rb-file-helpers.h"
 #include "rb-util.h"
 
+static gulong pre_delete_sig_handler;
+static gulong post_delete_sig_handler;
+
 static int
 _get_property_count (RhythmDBPropertyModel *model, const char *artist)
 {
@@ -51,6 +54,65 @@ _get_property_count (RhythmDBPropertyModel *model, const char *artist)
 	gtk_tree_model_get (GTK_TREE_MODEL (model), &iter,
 			    RHYTHMDB_PROPERTY_MODEL_COLUMN_NUMBER, &count, -1);
 	return count;
+}
+
+static void
+verify_pre_row_deletion (RhythmDBPropertyModel *propmodel)
+{
+	char *artist;
+	gint nrows;
+	GtkTreeIter iter;
+
+	nrows = gtk_tree_model_iter_n_children (GTK_TREE_MODEL (propmodel), NULL);
+	ck_assert (nrows == 3);
+
+	/* skip 'All' */
+	ck_assert (gtk_tree_model_get_iter_first (GTK_TREE_MODEL (propmodel), &iter));
+
+	/* artist 1 */
+	ck_assert (gtk_tree_model_iter_next (GTK_TREE_MODEL (propmodel), &iter));
+	gtk_tree_model_get (GTK_TREE_MODEL (propmodel), &iter,
+			    RHYTHMDB_PROPERTY_MODEL_COLUMN_TITLE, &artist, -1);
+	ck_assert (g_strcmp0 (artist, "x") == 0);
+	g_free (artist);
+
+	/* artist 2 */
+	ck_assert (gtk_tree_model_iter_next (GTK_TREE_MODEL (propmodel), &iter));
+	gtk_tree_model_get (GTK_TREE_MODEL (propmodel), &iter,
+			    RHYTHMDB_PROPERTY_MODEL_COLUMN_TITLE, &artist, -1);
+	ck_assert (g_strcmp0 (artist, "y") == 0);
+	g_free (artist);
+
+	/* end of model */
+	ck_assert (gtk_tree_model_iter_next (GTK_TREE_MODEL (propmodel), &iter) == FALSE);
+
+	g_signal_handler_disconnect (G_OBJECT (propmodel), pre_delete_sig_handler);
+}
+
+static void
+verify_post_row_deletion (RhythmDBPropertyModel *propmodel)
+{
+	char *artist;
+	gint nrows;
+	GtkTreeIter iter;
+
+	nrows = gtk_tree_model_iter_n_children (GTK_TREE_MODEL (propmodel), NULL);
+	ck_assert (nrows == 2);
+
+	/* skip 'All' */
+	ck_assert (gtk_tree_model_get_iter_first (GTK_TREE_MODEL (propmodel), &iter));
+
+	/* artist 1 */
+	ck_assert (gtk_tree_model_iter_next (GTK_TREE_MODEL (propmodel), &iter));
+	gtk_tree_model_get (GTK_TREE_MODEL (propmodel), &iter,
+			    RHYTHMDB_PROPERTY_MODEL_COLUMN_TITLE, &artist, -1);
+	ck_assert (g_strcmp0 (artist, "y") == 0);
+	g_free (artist);
+
+	/* end of model */
+	ck_assert (gtk_tree_model_iter_next (GTK_TREE_MODEL (propmodel), &iter) == FALSE);
+
+	g_signal_handler_disconnect (G_OBJECT (propmodel), post_delete_sig_handler);
 }
 
 /* tests property models attached to static query models */
@@ -89,21 +151,29 @@ START_TEST (test_rhythmdb_property_model_static)
 	set_waiting_signal (G_OBJECT (propmodel), "row-inserted");
 	rhythmdb_query_model_add_entry (model, b, -1);
 	wait_for_signal ();
-	fail_unless (rhythmdb_query_model_entry_to_iter (model, a, &iter));
-	fail_unless (rhythmdb_query_model_entry_to_iter (model, b, &iter));
-	/*fail_unless (_get_property_count (propmodel, _("All")) == 2);*/
-	fail_unless (_get_property_count (propmodel, "x") == 1);
-	fail_unless (_get_property_count (propmodel, "y") == 1);
+	ck_assert (rhythmdb_query_model_entry_to_iter (model, a, &iter));
+	ck_assert (rhythmdb_query_model_entry_to_iter (model, b, &iter));
+	/*ck_assert (_get_property_count (propmodel, _("All")) == 2);*/
+	ck_assert (_get_property_count (propmodel, "x") == 1);
+	ck_assert (_get_property_count (propmodel, "y") == 1);
 
 	end_step ();
 
 	/* change one */
-	set_waiting_signal (G_OBJECT (propmodel), "row-deleted");
+	pre_delete_sig_handler = set_waiting_signal_with_callback (G_OBJECT (propmodel),
+								   "pre-row-deletion",
+								   G_CALLBACK (verify_pre_row_deletion),
+								   NULL);
+	post_delete_sig_handler = set_waiting_signal_with_callback (G_OBJECT (propmodel),
+								    "row-deleted",
+								    G_CALLBACK (verify_post_row_deletion),
+								    NULL);
+
 	set_entry_string (db, a, RHYTHMDB_PROP_ARTIST, "y");
 	rhythmdb_commit (db);
 	wait_for_signal ();
-	fail_unless (_get_property_count (propmodel, "x") == 0);
-	fail_unless (_get_property_count (propmodel, "y") == 2);
+	ck_assert (_get_property_count (propmodel, "x") == 0);
+	ck_assert (_get_property_count (propmodel, "y") == 2);
 
 	end_step ();
 
@@ -112,17 +182,17 @@ START_TEST (test_rhythmdb_property_model_static)
 	set_entry_hidden (db, a, TRUE);
 	rhythmdb_commit (db);
 	wait_for_signal ();
-	/*fail_unless (_get_property_count (propmodel, _("All")) == 1);*/
-	fail_unless (_get_property_count (propmodel, "x") == 0);
-	fail_unless (_get_property_count (propmodel, "y") == 1);
+	/*ck_assert (_get_property_count (propmodel, _("All")) == 1);*/
+	ck_assert (_get_property_count (propmodel, "x") == 0);
+	ck_assert (_get_property_count (propmodel, "y") == 1);
 
 	end_step ();
 
 	/* change back */
 	set_entry_string (db, a, RHYTHMDB_PROP_ARTIST, "x");
 	rhythmdb_commit (db);
-	fail_unless (_get_property_count (propmodel, "x") == 0);
-	fail_unless (_get_property_count (propmodel, "y") == 1);
+	ck_assert (_get_property_count (propmodel, "x") == 0);
+	ck_assert (_get_property_count (propmodel, "y") == 1);
 
 	end_step ();
 
@@ -132,9 +202,9 @@ START_TEST (test_rhythmdb_property_model_static)
 	rhythmdb_commit (db);
 	wait_for_signal ();
 
-	/*fail_unless (_get_property_count (propmodel, _("All")) == 2);*/
-	fail_unless (_get_property_count (propmodel, "x") == 1);
-	fail_unless (_get_property_count (propmodel, "y") == 1);
+	/*ck_assert (_get_property_count (propmodel, _("All")) == 2);*/
+	ck_assert (_get_property_count (propmodel, "x") == 1);
+	ck_assert (_get_property_count (propmodel, "y") == 1);
 
 	end_step ();
 
@@ -142,9 +212,9 @@ START_TEST (test_rhythmdb_property_model_static)
 	set_waiting_signal (G_OBJECT (propmodel), "pre-row-deletion");
 	rhythmdb_query_model_remove_entry (model, a);
 	wait_for_signal ();
-	/*fail_unless (_get_property_count (propmodel, _("All")) == 1);*/
-	fail_unless (_get_property_count (propmodel, "x") == 0);
-	fail_unless (_get_property_count (propmodel, "y") == 1);
+	/*ck_assert (_get_property_count (propmodel, _("All")) == 1);*/
+	ck_assert (_get_property_count (propmodel, "x") == 0);
+	ck_assert (_get_property_count (propmodel, "y") == 1);
 
 	end_step ();
 
@@ -157,8 +227,8 @@ START_TEST (test_rhythmdb_property_model_static)
 	g_object_set (propmodel, "query-model", model2, NULL);
 	wait_for_signal ();
 
-	fail_unless (_get_property_count (propmodel, "x") == 1);
-	fail_unless (_get_property_count (propmodel, "y") == 1);
+	ck_assert (_get_property_count (propmodel, "x") == 1);
+	ck_assert (_get_property_count (propmodel, "y") == 1);
 
 	end_step ();
 
@@ -167,8 +237,8 @@ START_TEST (test_rhythmdb_property_model_static)
 	rhythmdb_entry_delete (db, a);
 	rhythmdb_commit (db);
 	wait_for_signal ();
-	fail_unless (_get_property_count (propmodel, "x") == 0);
-	fail_unless (_get_property_count (propmodel, "y") == 1);
+	ck_assert (_get_property_count (propmodel, "x") == 0);
+	ck_assert (_get_property_count (propmodel, "y") == 1);
 
 	end_step ();
 
@@ -177,8 +247,8 @@ START_TEST (test_rhythmdb_property_model_static)
 	rhythmdb_entry_delete (db, b);
 	rhythmdb_commit (db);
 	wait_for_signal ();
-	fail_unless (_get_property_count (propmodel, "x") == 0);
-	fail_unless (_get_property_count (propmodel, "y") == 0);
+	ck_assert (_get_property_count (propmodel, "x") == 0);
+	ck_assert (_get_property_count (propmodel, "y") == 0);
 
 	end_test_case ();
 
@@ -234,8 +304,8 @@ START_TEST (test_rhythmdb_property_model_query)
 	rhythmdb_commit (db);
 	wait_for_signal ();
 
-	fail_unless (_get_property_count (propmodel, "x") == 1);
-	fail_unless (_get_property_count (propmodel, "y") == 0);
+	ck_assert (_get_property_count (propmodel, "x") == 1);
+	ck_assert (_get_property_count (propmodel, "y") == 0);
 
 	end_step ();
 
@@ -244,8 +314,8 @@ START_TEST (test_rhythmdb_property_model_query)
 	set_entry_string (db, b, RHYTHMDB_PROP_ARTIST, "x");
 	rhythmdb_commit (db);
 	wait_for_signal ();
-	fail_unless (_get_property_count (propmodel, "x") == 2);
-	fail_unless (_get_property_count (propmodel, "y") == 0);
+	ck_assert (_get_property_count (propmodel, "x") == 2);
+	ck_assert (_get_property_count (propmodel, "y") == 0);
 
 	end_step ();
 
@@ -254,9 +324,9 @@ START_TEST (test_rhythmdb_property_model_query)
 	set_entry_string (db, b, RHYTHMDB_PROP_ARTIST, "xx");
 	rhythmdb_commit (db);
 	wait_for_signal ();
-	fail_unless (_get_property_count (propmodel, "x") == 1);
-	fail_unless (_get_property_count (propmodel, "xx") == 1);
-	fail_unless (_get_property_count (propmodel, "y") == 0);
+	ck_assert (_get_property_count (propmodel, "x") == 1);
+	ck_assert (_get_property_count (propmodel, "xx") == 1);
+	ck_assert (_get_property_count (propmodel, "y") == 0);
 
 	end_step ();
 
@@ -265,8 +335,8 @@ START_TEST (test_rhythmdb_property_model_query)
 	set_entry_hidden (db, a, TRUE);
 	rhythmdb_commit (db);
 	wait_for_signal ();
-	fail_unless (_get_property_count (propmodel, "x") == 0);
-	fail_unless (_get_property_count (propmodel, "xx") == 1);
+	ck_assert (_get_property_count (propmodel, "x") == 0);
+	ck_assert (_get_property_count (propmodel, "xx") == 1);
 
 	end_step ();
 
@@ -275,8 +345,8 @@ START_TEST (test_rhythmdb_property_model_query)
 	set_entry_string (db, a, RHYTHMDB_PROP_ARTIST, "xx");
 	rhythmdb_commit (db);
 	wait_for_signal ();
-	fail_unless (_get_property_count (propmodel, "x") == 0);
-	fail_unless (_get_property_count (propmodel, "xx") == 1);
+	ck_assert (_get_property_count (propmodel, "x") == 0);
+	ck_assert (_get_property_count (propmodel, "xx") == 1);
 
 	end_step ();
 
@@ -285,8 +355,8 @@ START_TEST (test_rhythmdb_property_model_query)
 	set_entry_hidden (db, a, FALSE);
 	rhythmdb_commit (db);
 	wait_for_signal ();
-	fail_unless (_get_property_count (propmodel, "x") == 0);
-	fail_unless (_get_property_count (propmodel, "xx") == 2);
+	ck_assert (_get_property_count (propmodel, "x") == 0);
+	ck_assert (_get_property_count (propmodel, "xx") == 2);
 
 	end_step ();
 
@@ -295,17 +365,17 @@ START_TEST (test_rhythmdb_property_model_query)
 	set_entry_string (db, a, RHYTHMDB_PROP_ARTIST, "y");
 	rhythmdb_commit (db);
 	wait_for_signal ();
-	fail_unless (_get_property_count (propmodel, "x") == 0);
-	fail_unless (_get_property_count (propmodel, "xx") == 1);
-	fail_unless (_get_property_count (propmodel, "y") == 0);
+	ck_assert (_get_property_count (propmodel, "x") == 0);
+	ck_assert (_get_property_count (propmodel, "xx") == 1);
+	ck_assert (_get_property_count (propmodel, "y") == 0);
 
 	end_step ();
 
 	/* switch to model2 */
 	g_object_set (propmodel, "query-model", model2, NULL);
-	fail_unless (_get_property_count (propmodel, "x") == 0);
-	fail_unless (_get_property_count (propmodel, "y") == 1);
-	fail_unless (_get_property_count (propmodel, "xx") == 0);
+	ck_assert (_get_property_count (propmodel, "x") == 0);
+	ck_assert (_get_property_count (propmodel, "y") == 1);
+	ck_assert (_get_property_count (propmodel, "xx") == 0);
 
 	end_step ();
 
@@ -314,9 +384,9 @@ START_TEST (test_rhythmdb_property_model_query)
 	set_entry_string (db, a, RHYTHMDB_PROP_ARTIST, "x");
 	rhythmdb_commit (db);
 	wait_for_signal ();
-	fail_unless (_get_property_count (propmodel, "x") == 0);
-	fail_unless (_get_property_count (propmodel, "xx") == 0);
-	fail_unless (_get_property_count (propmodel, "y") == 0);
+	ck_assert (_get_property_count (propmodel, "x") == 0);
+	ck_assert (_get_property_count (propmodel, "xx") == 0);
+	ck_assert (_get_property_count (propmodel, "y") == 0);
 
 	end_step ();
 
@@ -383,8 +453,8 @@ START_TEST (test_rhythmdb_property_model_query_chain)
 	rhythmdb_commit (db);
 	wait_for_signal ();
 
-	fail_unless (_get_property_count (propmodel, "x") == 0);
-	fail_unless (_get_property_count (propmodel, "y") == 1);
+	ck_assert (_get_property_count (propmodel, "x") == 0);
+	ck_assert (_get_property_count (propmodel, "y") == 1);
 
 	end_step ();
 
@@ -394,9 +464,9 @@ START_TEST (test_rhythmdb_property_model_query_chain)
 	rhythmdb_commit (db);
 	wait_for_signal ();
 
-	fail_unless (_get_property_count (propmodel, "x") == 0);
-	fail_unless (_get_property_count (propmodel, "y") == 1);
-	fail_unless (_get_property_count (propmodel, "yy") == 1);
+	ck_assert (_get_property_count (propmodel, "x") == 0);
+	ck_assert (_get_property_count (propmodel, "y") == 1);
+	ck_assert (_get_property_count (propmodel, "yy") == 1);
 
 	end_step ();
 
@@ -406,8 +476,8 @@ START_TEST (test_rhythmdb_property_model_query_chain)
 	rhythmdb_commit (db);
 	wait_for_signal ();
 
-	fail_unless (_get_property_count (propmodel, "y") == 2);
-	fail_unless (_get_property_count (propmodel, "yy") == 0);
+	ck_assert (_get_property_count (propmodel, "y") == 2);
+	ck_assert (_get_property_count (propmodel, "yy") == 0);
 
 	end_step ();
 
@@ -417,8 +487,8 @@ START_TEST (test_rhythmdb_property_model_query_chain)
 	rhythmdb_commit (db);
 	wait_for_signal ();
 
-	fail_unless (_get_property_count (propmodel, "y") == 1);
-	fail_unless (_get_property_count (propmodel, "z") == 0);
+	ck_assert (_get_property_count (propmodel, "y") == 1);
+	ck_assert (_get_property_count (propmodel, "z") == 0);
 
 	end_step ();
 
@@ -482,12 +552,12 @@ START_TEST (test_rhythmdb_property_model_sorting)
 	/* test a comes immediately before c */
 	rhythmdb_property_model_iter_from_string (propmodel, "a", &iter1);
 	rhythmdb_property_model_iter_from_string (propmodel, "c", &iter2);
-	fail_unless (iter1.user_data == g_sequence_iter_prev (iter2.user_data));
+	ck_assert (iter1.user_data == g_sequence_iter_prev (iter2.user_data));
 
 	/* test c comes immediately before the_b */
 	rhythmdb_property_model_iter_from_string (propmodel, "c", &iter1);
 	rhythmdb_property_model_iter_from_string (propmodel, "the b", &iter2);
-	fail_unless (iter1.user_data == g_sequence_iter_prev (iter2.user_data));
+	ck_assert (iter1.user_data == g_sequence_iter_prev (iter2.user_data));
 
 	end_step ();
 
@@ -500,12 +570,12 @@ START_TEST (test_rhythmdb_property_model_sorting)
 	/* test a comes immediately before the_b */
 	rhythmdb_property_model_iter_from_string (propmodel, "a", &iter1);
 	rhythmdb_property_model_iter_from_string (propmodel, "the b", &iter2);
-	fail_unless (iter1.user_data == g_sequence_iter_prev (iter2.user_data));
+	ck_assert (iter1.user_data == g_sequence_iter_prev (iter2.user_data));
 
 	/* test the_b comes immediately before c */
 	rhythmdb_property_model_iter_from_string (propmodel, "the b", &iter1);
 	rhythmdb_property_model_iter_from_string (propmodel, "c", &iter2);
-	fail_unless (iter1.user_data == g_sequence_iter_prev (iter2.user_data));
+	ck_assert (iter1.user_data == g_sequence_iter_prev (iter2.user_data));
 
 	end_step();
 
@@ -518,11 +588,11 @@ START_TEST (test_rhythmdb_property_model_sorting)
 	/* property model order shouldn't have changed */
 	rhythmdb_property_model_iter_from_string (propmodel, "a", &iter1);
 	rhythmdb_property_model_iter_from_string (propmodel, "THE B", &iter2);
-	fail_unless (iter1.user_data == g_sequence_iter_prev (iter2.user_data));
+	ck_assert (iter1.user_data == g_sequence_iter_prev (iter2.user_data));
 
 	rhythmdb_property_model_iter_from_string (propmodel, "THE B", &iter1);
 	rhythmdb_property_model_iter_from_string (propmodel, "c", &iter2);
-	fail_unless (iter1.user_data == g_sequence_iter_prev (iter2.user_data));
+	ck_assert (iter1.user_data == g_sequence_iter_prev (iter2.user_data));
 
 	end_step();
 
@@ -535,11 +605,11 @@ START_TEST (test_rhythmdb_property_model_sorting)
 	/* property model order shouldn't have changed */
 	rhythmdb_property_model_iter_from_string (propmodel, "a", &iter1);
 	rhythmdb_property_model_iter_from_string (propmodel, "THE B", &iter2);
-	fail_unless (iter1.user_data == g_sequence_iter_prev (iter2.user_data));
+	ck_assert (iter1.user_data == g_sequence_iter_prev (iter2.user_data));
 
 	rhythmdb_property_model_iter_from_string (propmodel, "THE B", &iter1);
 	rhythmdb_property_model_iter_from_string (propmodel, "c", &iter2);
-	fail_unless (iter1.user_data == g_sequence_iter_prev (iter2.user_data));
+	ck_assert (iter1.user_data == g_sequence_iter_prev (iter2.user_data));
 
 	end_step();
 
@@ -552,11 +622,11 @@ START_TEST (test_rhythmdb_property_model_sorting)
 	/* property model order should have changed to match */
 	rhythmdb_property_model_iter_from_string (propmodel, "a", &iter1);
 	rhythmdb_property_model_iter_from_string (propmodel, "c", &iter2);
-	fail_unless (iter1.user_data == g_sequence_iter_prev (iter2.user_data));
+	ck_assert (iter1.user_data == g_sequence_iter_prev (iter2.user_data));
 
 	rhythmdb_property_model_iter_from_string (propmodel, "c", &iter1);
 	rhythmdb_property_model_iter_from_string (propmodel, "THE B", &iter2);
-	fail_unless (iter1.user_data == g_sequence_iter_prev (iter2.user_data));
+	ck_assert (iter1.user_data == g_sequence_iter_prev (iter2.user_data));
 
 	end_step();
 
@@ -569,11 +639,11 @@ START_TEST (test_rhythmdb_property_model_sorting)
 	/* property model order should have changed to match */
 	rhythmdb_property_model_iter_from_string (propmodel, "a", &iter1);
 	rhythmdb_property_model_iter_from_string (propmodel, "c", &iter2);
-	fail_unless (iter1.user_data == g_sequence_iter_prev (iter2.user_data));
+	ck_assert (iter1.user_data == g_sequence_iter_prev (iter2.user_data));
 
 	rhythmdb_property_model_iter_from_string (propmodel, "c", &iter1);
 	rhythmdb_property_model_iter_from_string (propmodel, "THE B", &iter2);
-	fail_unless (iter1.user_data == g_sequence_iter_prev (iter2.user_data));
+	ck_assert (iter1.user_data == g_sequence_iter_prev (iter2.user_data));
 
 	end_step();
 
@@ -700,10 +770,10 @@ main (int argc, char **argv)
 	rb_profile_start ("rhythmdb-property-model test suite");
 
 	rb_threads_init ();
-	setlocale (LC_ALL, NULL);
+	setlocale (LC_ALL, "");
 	rb_debug_init (TRUE);
 	rb_refstring_system_init ();
-	rb_file_helpers_init (TRUE);
+	rb_file_helpers_init ();
 
 	/* setup tests */
 	s = rhythmdb_property_model_suite ();

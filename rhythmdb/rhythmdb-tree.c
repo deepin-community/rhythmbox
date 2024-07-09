@@ -675,6 +675,7 @@ rhythmdb_tree_parser_end_element (struct RhythmDBTreeLoadContext *ctx,
 		case RHYTHMDB_PROP_TRACK_PEAK:
 		case RHYTHMDB_PROP_ALBUM_GAIN:
 		case RHYTHMDB_PROP_ALBUM_PEAK:
+		case RHYTHMDB_PROP_SUMMARY:
 			skip = TRUE;
 			break;
 		default:
@@ -1114,10 +1115,6 @@ save_entry (RhythmDBTree *db,
 			if (podcast && podcast->subtitle)
 				save_entry_string(ctx, elt_name, rb_refstring_get (podcast->subtitle));
 			break;
-		case RHYTHMDB_PROP_SUMMARY:
-			if (podcast && podcast->summary)
-				save_entry_string(ctx, elt_name, rb_refstring_get (podcast->summary));
-			break;
 		case RHYTHMDB_PROP_LANG:
 			if (podcast && podcast->lang)
 				save_entry_string(ctx, elt_name, rb_refstring_get (podcast->lang));
@@ -1133,6 +1130,10 @@ save_entry (RhythmDBTree *db,
 		case RHYTHMDB_PROP_POST_TIME:
 			if (podcast)
 				save_entry_ulong (ctx, elt_name, podcast->post_time, FALSE);
+			break;
+		case RHYTHMDB_PROP_PODCAST_GUID:
+			if (podcast && podcast->guid)
+				save_entry_string(ctx, elt_name, rb_refstring_get (podcast->guid));
 			break;
 		case RHYTHMDB_PROP_KEYWORD:
 			keywords = rhythmdb_entry_keywords_get (RHYTHMDB (db), entry);
@@ -1183,6 +1184,8 @@ save_entry (RhythmDBTree *db,
 		case RHYTHMDB_PROP_TRACK_PEAK:
 		case RHYTHMDB_PROP_ALBUM_GAIN:
 		case RHYTHMDB_PROP_ALBUM_PEAK:
+		/* obsolete podcast properties */
+		case RHYTHMDB_PROP_SUMMARY:
 			break;
 		}
 	}

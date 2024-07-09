@@ -43,11 +43,11 @@ struct RBRhythmDBQueryModelDMAPDbAdapterPrivate {
 
 typedef struct ForeachAdapterData {
 	gpointer data;
-	GHFunc func;
+	DmapIdRecordFunc func;
 } ForeachAdapterData;
 
-static DMAPRecord *
-rb_rhythmdb_query_model_dmap_db_adapter_lookup_by_id (const DMAPDb *db,
+static DmapRecord *
+rb_rhythmdb_query_model_dmap_db_adapter_lookup_by_id (const DmapDb *db,
 						      guint id)
 {
 	g_error ("Not implemented");
@@ -61,7 +61,7 @@ foreach_adapter (GtkTreeModel *model,
 		 gpointer data)
 {
 	gulong id;
-	DMAPRecord *record;
+	DmapRecord *record;
 	RhythmDBEntry *entry;
 	ForeachAdapterData *foreach_adapter_data;
 
@@ -71,7 +71,7 @@ foreach_adapter (GtkTreeModel *model,
 	foreach_adapter_data = data;
 	record = DMAP_RECORD (rb_daap_record_new (entry));
 
-	foreach_adapter_data->func (GUINT_TO_POINTER (id),
+	foreach_adapter_data->func (id,
 				    record,
 				    foreach_adapter_data->data);
 
@@ -82,9 +82,9 @@ foreach_adapter (GtkTreeModel *model,
 }
 
 static void
-rb_rhythmdb_query_model_dmap_db_adapter_foreach	(const DMAPDb *db,
-					 GHFunc func,
-				         gpointer data)
+rb_rhythmdb_query_model_dmap_db_adapter_foreach	(const DmapDb *db,
+                                                 DmapIdRecordFunc func,
+                                                 gpointer data)
 {
 	ForeachAdapterData *foreach_adapter_data;
 
@@ -102,7 +102,7 @@ rb_rhythmdb_query_model_dmap_db_adapter_foreach	(const DMAPDb *db,
 }
 
 static gint64
-rb_rhythmdb_query_model_dmap_db_adapter_count (const DMAPDb *db)
+rb_rhythmdb_query_model_dmap_db_adapter_count (const DmapDb *db)
 {
 	g_assert (RB_RHYTHMDB_QUERY_MODEL_DMAP_DB_ADAPTER (db)->priv->model != NULL); 
 	return gtk_tree_model_iter_n_children (
@@ -110,7 +110,7 @@ rb_rhythmdb_query_model_dmap_db_adapter_count (const DMAPDb *db)
 }
 
 static guint
-rb_rhythmdb_query_model_dmap_db_adapter_add (DMAPDb *db, DMAPRecord *record)
+rb_rhythmdb_query_model_dmap_db_adapter_add (DmapDb *db, DmapRecord *record, GError **error)
 {
 	g_error ("Not implemented");
 	return 0;
@@ -136,7 +136,7 @@ rb_rhythmdb_query_model_dmap_db_adapter_class_finalize (RBRhythmDBQueryModelDMAP
 static void
 rb_rhythmdb_query_model_dmap_db_adapter_interface_init (gpointer iface, gpointer data)
 {
-	DMAPDbIface *dmap_db = iface;
+	DmapDbInterface *dmap_db = iface;
 
 	g_assert (G_TYPE_FROM_INTERFACE (dmap_db) == DMAP_TYPE_DB);
 

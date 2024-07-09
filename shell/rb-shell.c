@@ -61,11 +61,7 @@
 #include "rb-shell.h"
 #include "rb-debug.h"
 #include "rb-dialog.h"
-#ifdef WITH_RHYTHMDB_TREE
 #include "rhythmdb-tree.h"
-#else
-#error "no database specified. configure broken?"
-#endif
 #include "rb-display-page-tree.h"
 #include "rb-display-page-group.h"
 #include "rb-file-helpers.h"
@@ -101,8 +97,6 @@
 #include "rb-task-list.h"
 #include "rb-task-list-display.h"
 
-#define UNINSTALLED_PLUGINS_LOCATION "plugins"
-
 #define PLAYING_ENTRY_NOTIFY_TIME 4
 
 #define ALBUM_ART_MIN_SIZE	32
@@ -134,7 +128,6 @@ static gboolean rb_shell_key_press_event_cb (GtkWidget *win,
 					     RBShell *shell);
 static void rb_shell_sync_window_state (RBShell *shell, gboolean dont_maximise);
 static void rb_shell_sync_paned (RBShell *shell);
-static void rb_shell_sync_party_mode (RBShell *shell);
 static void rb_shell_select_page (RBShell *shell, RBDisplayPage *display_page);
 static void display_page_selected_cb (RBDisplayPageTree *display_page_tree,
 				      RBDisplayPage *page,
@@ -178,7 +171,6 @@ static void paned_size_allocate_cb (GtkWidget *widget,
 
 static void jump_to_playing_action_cb (GSimpleAction *, GVariant *, gpointer);
 static void add_music_action_cb (GAction *action, GVariant *parameter, RBShell *shell);
-static void view_party_mode_changed_cb (GAction *action, GVariant *parameter, RBShell *shell);
 
 static gboolean rb_shell_visibility_changing (RBShell *shell, gboolean initial, gboolean visible);
 
@@ -293,8 +285,6 @@ struct _RBShellPrivate
 
 	char *cached_title;
 	gboolean cached_playing;
-
-	gboolean party_mode;
 
 	GSettings *settings;
 
@@ -459,11 +449,7 @@ construct_db (RBShell *shell)
 		pathname = rb_find_user_data_file ("rhythmdb.xml");
 	}
 
-#ifdef WITH_RHYTHMDB_TREE
 	shell->priv->db = rhythmdb_tree_new (pathname);
-#elif defined(WITH_RHYTHMDB_GDA)
-	shell->priv->db = rhythmdb_gda_new (pathname);
-#endif
 	g_free (pathname);
 
 	if (shell->priv->dry_run)
@@ -767,7 +753,7 @@ construct_load_ui (RBShell *shell)
 	model = rb_application_get_shared_menu (RB_APPLICATION (app), "app-menu");
 	gtk_menu_button_set_menu_model (GTK_MENU_BUTTON (menu_button), model);
 	gtk_style_context_add_class (gtk_widget_get_style_context (menu_button), GTK_STYLE_CLASS_RAISED);
-	g_object_set (menu_button, "margin-top", 12, "margin-bottom", 12, NULL);
+	gtk_widget_set_valign (menu_button, GTK_ALIGN_CENTER);
 
 	gtk_widget_add_accelerator (menu_button,
 				    "activate",
@@ -777,7 +763,7 @@ construct_load_ui (RBShell *shell)
 				    GTK_ACCEL_VISIBLE);
 	rb_application_set_menu_accelerators (shell->priv->application, model, TRUE);
 
-	image = gtk_image_new_from_icon_name ("open-menu-symbolic", GTK_ICON_SIZE_LARGE_TOOLBAR);
+	image = gtk_image_new_from_icon_name ("open-menu-symbolic", GTK_ICON_SIZE_SMALL_TOOLBAR);
 	gtk_container_add (GTK_CONTAINER (menu_button), image);
 
 	shell->priv->menu_button = GTK_WIDGET (gtk_tool_item_new ());
@@ -867,17 +853,6 @@ construct_plugins (RBShell *shell)
 				     plugindir,
 				     plugindir);
 	g_free (plugindir);
-
-#ifdef USE_UNINSTALLED_DIRS
-	plugindir = g_build_filename (SHARE_UNINSTALLED_BUILDDIR, "..", UNINSTALLED_PLUGINS_LOCATION, NULL);
-	plugindatadir = g_build_filename (SHARE_UNINSTALLED_DIR, "..", UNINSTALLED_PLUGINS_LOCATION, NULL);
-	rb_debug ("uninstalled plugin search path: %s / %s", plugindir, plugindatadir);
-	peas_engine_add_search_path (shell->priv->plugin_engine,
-				     plugindir,
-				     plugindatadir);
-	g_free (plugindir);
-	g_free (plugindatadir);
-#endif
 
 	plugindir = g_build_filename (LIBDIR, "rhythmbox", "plugins", NULL);
 	plugindatadir = g_build_filename (DATADIR, "rhythmbox", "plugins", NULL);
@@ -1729,12 +1704,6 @@ rb_shell_constructed (GObject *object)
 	g_action_map_add_action (G_ACTION_MAP (shell->priv->window), action);
 	g_signal_connect (shell->priv->settings, "changed", G_CALLBACK (rb_shell_settings_changed_cb), shell);
 
-	action = G_ACTION (g_simple_action_new_stateful ("party-mode",
-							 NULL,
-							 g_variant_new_boolean (FALSE)));
-	g_action_map_add_action (G_ACTION_MAP (shell->priv->window), action);
-	g_signal_connect (action, "change-state", G_CALLBACK (view_party_mode_changed_cb), shell);
-
 	action = G_ACTION (g_simple_action_new ("library-import", NULL));
 	g_signal_connect (action, "activate", G_CALLBACK (add_music_action_cb), shell);
 	g_action_map_add_action (G_ACTION_MAP (app), action);
@@ -1758,7 +1727,6 @@ rb_shell_constructed (GObject *object)
 	construct_plugins (shell);
 
 	rb_shell_sync_window_state (shell, FALSE);
-	rb_shell_sync_party_mode (shell);
 
 	rb_shell_select_page (shell, RB_DISPLAY_PAGE (shell->priv->library_source));
 
@@ -1952,12 +1920,7 @@ rb_shell_window_delete_cb (GtkWidget *win,
 			   GdkEventAny *event,
 			   RBShell *shell)
 {
-	if (shell->priv->party_mode) {
-		return TRUE;
-	}
-
 	rb_shell_quit (shell, NULL);
-
 	return TRUE;
 }
 
@@ -2418,14 +2381,6 @@ rb_shell_set_window_title (RBShell *shell,
 }
 
 static void
-view_party_mode_changed_cb (GAction *action, GVariant *parameter, RBShell *shell)
-{
-	shell->priv->party_mode = g_variant_get_boolean (parameter);
-	g_simple_action_set_state (G_SIMPLE_ACTION (action), parameter);
-	rb_shell_sync_party_mode (shell);
-}
-
-static void
 add_music_action_cb (GAction *action, GVariant *parameter, RBShell *shell)
 {
 	rb_shell_select_page (shell, RB_DISPLAY_PAGE (shell->priv->library_source));
@@ -2546,53 +2501,6 @@ rb_shell_load_complete_cb (RhythmDB *db,
 			   RBShell *shell)
 {
 	g_idle_add ((GSourceFunc) idle_handle_load_complete, shell);
-}
-
-static gboolean
-window_state_event_cb (GtkWidget           *widget,
-		       GdkEventWindowState *event,
-		       RBShell             *shell)
-{
-	if (event->changed_mask & GDK_WINDOW_STATE_ICONIFIED) {
-		rb_shell_present (shell, gtk_get_current_event_time (), NULL);
-	}
-
-	return TRUE;
-}
-
-static void
-rb_shell_sync_party_mode (RBShell *shell)
-{
-	GAction *action;
-
-	/* party mode does not use gsettings as a model since it
-	   should not be persistent */
-
-	/* disable/enable quit action */
-	action = g_action_map_lookup_action (G_ACTION_MAP (shell->priv->application), "quit");
-	g_simple_action_set_enabled (G_SIMPLE_ACTION (action), !shell->priv->party_mode);
-
-	/* show/hide queue as sidebar ? */
-
-	g_object_set (shell->priv->player_shell, "queue-only", shell->priv->party_mode, NULL);
-
-	/* Set playlist manager source to the current source to update properties */
-	if (shell->priv->selected_page && RB_IS_SOURCE (shell->priv->selected_page)) {
-		RBSource *source = RB_SOURCE (shell->priv->selected_page);
-		g_object_set (shell->priv->playlist_manager, "source", source, NULL);
-		rb_shell_clipboard_set_source (shell->priv->clipboard_shell, source);
-	}
-
-	gtk_window_set_keep_above (GTK_WINDOW (shell->priv->window), shell->priv->party_mode);
-	if (shell->priv->party_mode) {
-		gtk_window_fullscreen (GTK_WINDOW (shell->priv->window));
-		gtk_window_stick (GTK_WINDOW (shell->priv->window));
-		g_signal_connect (shell->priv->window, "window-state-event", G_CALLBACK (window_state_event_cb), shell);
-	} else {
-		gtk_window_unstick (GTK_WINDOW (shell->priv->window));
-		gtk_window_unfullscreen (GTK_WINDOW (shell->priv->window));
-		g_signal_handlers_disconnect_by_func (shell->priv->window, window_state_event_cb, shell);
-	}
 }
 
 static void
@@ -2819,6 +2727,7 @@ typedef struct {
 	RBSource *playlist_source;
 	gboolean can_use_playlist;
 	gboolean source_is_entry;
+	gboolean fake_playlist;
 } PlaylistParseData;
 
 static void
@@ -2828,6 +2737,13 @@ handle_playlist_entry_cb (TotemPlParser *playlist,
 			  PlaylistParseData *data)
 {
 	RBSource *source;
+
+	/*
+	 * If we get a fake playlist (single entry containing the input uri),
+	 * we should pretend the file wasn't parsed as a playlist at all.
+	 */
+	if (g_str_equal (uri, data->uri) == FALSE)
+		data->fake_playlist = FALSE;
 
 	/*
 	 * Track whether the same playlist-handling source
@@ -2910,7 +2826,7 @@ load_uri_parser_finished_cb (GObject *parser, GAsyncResult *res, PlaylistParseDa
 		rb_debug ("%s ignored", data->uri);
 	}
 
-	if (result == TOTEM_PL_PARSER_RESULT_SUCCESS) {
+	if (result == TOTEM_PL_PARSER_RESULT_SUCCESS && data->fake_playlist == FALSE) {
 
 		if (data->can_use_playlist && data->playlist_source) {
 			rb_debug ("adding playlist %s to source", data->uri);
@@ -3022,6 +2938,7 @@ rb_shell_load_uri (RBShell *shell,
 		data->play = play;
 		data->can_use_playlist = TRUE;
 		data->source_is_entry = FALSE;
+		data->fake_playlist = TRUE;
 		data->playlist_source = NULL;
 
 		rb_debug ("adding uri %s, play %d", uri, play);
@@ -3045,20 +2962,6 @@ rb_shell_load_uri (RBShell *shell,
 	}
 
 	return TRUE;
-}
-
-/**
- * rb_shell_get_party_mode:
- * @shell: the #RBShell
- *
- * Returns %TRUE if the shell is in party mode
- *
- * Return value: %TRUE if the shell is in party mode
- */
-gboolean
-rb_shell_get_party_mode (RBShell *shell)
-{
-	return shell->priv->party_mode;
 }
 
 /**

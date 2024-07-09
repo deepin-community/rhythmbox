@@ -44,7 +44,7 @@ test_get_short_path_name (const char *in, const char *expected)
 
 	out = rb_uri_get_short_path_name (in);
 	rb_debug ("extracting short path from \"%s\", expecting \"%s\", got \"%s\"", in, expected, out);
-	fail_unless (strcmp (out, expected) == 0);
+	ck_assert (strcmp (out, expected) == 0);
 	g_free (out);
 }
 
@@ -58,7 +58,7 @@ START_TEST (test_rb_uri_get_short_path_name)
 	/* nothing */
 	in = NULL;
 	out = rb_uri_get_short_path_name (in);
-	fail_unless (out == NULL);
+	ck_assert (out == NULL);
 	g_free (out);
 
 	/* just a file name */
@@ -93,15 +93,31 @@ END_TEST
 START_TEST (test_rb_check_dir_has_space)
 {
 	init_once (TRUE);
-	fail_unless (rb_check_dir_has_space_uri ("file:///tmp", 1));
-	fail_unless (rb_check_dir_has_space_uri ("file:///etc/passwd", 1));
-	fail_unless (rb_check_dir_has_space_uri ("file:///tmp/NONEXISTANT_FILE", 1));
-	fail_unless (rb_check_dir_has_space_uri ("file:///tmp/NONEXISTANT/THISDOESNTEXISTEITHER/NORDOESTHIS", G_MAXUINT64) == FALSE);
+	ck_assert (rb_check_dir_has_space_uri ("file:///tmp", 1));
+	ck_assert (rb_check_dir_has_space_uri ("file:///etc/passwd", 1));
+	ck_assert (rb_check_dir_has_space_uri ("file:///tmp/NONEXISTANT_FILE", 1));
+	ck_assert (rb_check_dir_has_space_uri ("file:///tmp/NONEXISTANT/THISDOESNTEXISTEITHER/NORDOESTHIS", G_MAXUINT64) == FALSE);
+}
+END_TEST
+
+START_TEST (test_rb_uri_is_descendant)
+{
+	ck_assert (rb_uri_is_descendant ("file:///tmp", "file:///"));
+	ck_assert (rb_uri_is_descendant ("file:///tmp/2", "file:///"));
+	ck_assert (rb_uri_is_descendant ("file:///tmp/2", "file:///tmp"));
+	ck_assert (rb_uri_is_descendant ("file:///tmp/2", "file:///tmp/"));
+	ck_assert (rb_uri_is_descendant ("file:///tmp/", "file:///tmp") == FALSE);
+	ck_assert (rb_uri_is_descendant ("file:///tmp", "file:///tmp/") == FALSE);
+	ck_assert (rb_uri_is_descendant ("file:///tmp/", "file:///tmp/") == FALSE);
+	ck_assert (rb_uri_is_descendant ("file:///tmp", "file:///tmp") == FALSE);
+	ck_assert (rb_uri_is_descendant ("file:///tmp2", "file:///tmp") == FALSE);
+	ck_assert (rb_uri_is_descendant ("file:///tmp/2", "file:///tmp2") == FALSE);
+	ck_assert (rb_uri_is_descendant ("file:///tmp/22", "file:///tmp/2") == FALSE);
 }
 END_TEST
 
 static Suite *
-rb_file_helpers_suite ()
+rb_file_helpers_suite (void)
 {
 	Suite *s = suite_create ("rb-file-helpers");
 	TCase *tc_chain = tcase_create ("rb-file-helpers-core");
@@ -110,6 +126,7 @@ rb_file_helpers_suite ()
 
 	tcase_add_test (tc_chain, test_rb_uri_get_short_path_name);
 	tcase_add_test (tc_chain, test_rb_check_dir_has_space);
+	tcase_add_test (tc_chain, test_rb_uri_is_descendant);
 
 	return s;
 }
@@ -123,9 +140,9 @@ main (int argc, char **argv)
 
 	rb_profile_start ("rb-file-helpers test suite");
 	rb_threads_init ();
-	setlocale (LC_ALL, NULL);
+	setlocale (LC_ALL, "");
 	rb_debug_init (TRUE);
-	rb_file_helpers_init (TRUE);
+	rb_file_helpers_init ();
 
 	/* setup tests */
 	s = rb_file_helpers_suite ();

@@ -26,9 +26,7 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301  USA.
  */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include <glib/gi18n-lib.h>
 #include <gtk/gtk.h>
@@ -54,13 +52,9 @@
 #include "rb-audioscrobbler-user.h"
 
 #define RB_TYPE_AUDIOSCROBBLER_PLUGIN		(rb_audioscrobbler_plugin_get_type ())
-#define RB_AUDIOSCROBBLER_PLUGIN(o)		(G_TYPE_CHECK_INSTANCE_CAST ((o), RB_TYPE_AUDIOSCROBBLER_PLUGIN, RBAudioscrobblerPlugin))
-#define RB_AUDIOSCROBBLER_PLUGIN_CLASS(k)	(G_TYPE_CHECK_CLASS_CAST((k), RB_TYPE_AUDIOSCROBBLER_PLUGIN, RBAudioscrobblerPluginClass))
-#define RB_IS_AUDIOSCROBBLER_PLUGIN(o)		(G_TYPE_CHECK_INSTANCE_TYPE ((o), RB_TYPE_AUDIOSCROBBLER_PLUGIN))
-#define RB_IS_AUDIOSCROBBLER_PLUGIN_CLASS(k)	(G_TYPE_CHECK_CLASS_TYPE ((k), RB_TYPE_AUDIOSCROBBLER_PLUGIN))
-#define RB_AUDIOSCROBBLER_PLUGIN_GET_CLASS(o)	(G_TYPE_INSTANCE_GET_CLASS ((o), RB_TYPE_AUDIOSCROBBLER_PLUGIN, RBAudioscrobblerPluginClass))
+G_DECLARE_FINAL_TYPE (RBAudioscrobblerPlugin, rb_audioscrobbler_plugin, RB, AUDIOSCROBBLER_PLUGIN, PeasExtensionBase)
 
-typedef struct
+struct _RBAudioscrobblerPlugin
 {
 	PeasExtensionBase parent;
 
@@ -75,12 +69,12 @@ typedef struct
 	GSettings *librefm_settings;
 	GtkWidget *librefm_enabled_check;
 	RBDisplayPage *librefm_page;
-} RBAudioscrobblerPlugin;
+};
 
-typedef struct
+struct _RBAudioscrobblerPluginClass
 {
 	PeasExtensionBaseClass parent_class;
-} RBAudioscrobblerPluginClass;
+};
 
 G_MODULE_EXPORT void peas_register_types (PeasObjectModule *module);
 
@@ -128,12 +122,6 @@ impl_activate (PeasActivatable *bplugin)
 	icondir = g_build_filename (peas_plugin_info_get_data_dir (plugin_info), "icons", NULL);
 	gtk_icon_theme_append_search_path (theme, icondir);
 	g_free (icondir);
-
-#if defined(USE_UNINSTALLED_DIRS)
-	icondir = g_build_filename (peas_plugin_info_get_module_dir (plugin_info), "icons", NULL);
-	gtk_icon_theme_append_search_path (theme, icondir);
-	g_free (icondir);
-#endif
 
 	g_signal_connect_object (plugin->lastfm_settings,
 				 "changed",

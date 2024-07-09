@@ -284,9 +284,6 @@ rb_podcast_source_do_query (RBPodcastSource *source, gboolean feed_query)
 						      RHYTHMDB_QUERY_PROP_EQUALS,
 						      RHYTHMDB_PROP_TYPE,
 						      RHYTHMDB_ENTRY_TYPE_PODCAST_FEED,
-						      RHYTHMDB_QUERY_PROP_NOT_EQUAL,
-						      RHYTHMDB_PROP_STATUS,
-						      RHYTHMDB_PODCAST_FEED_STATUS_HIDDEN,
 						      RHYTHMDB_QUERY_END);
 			g_object_unref (feed_query_model);
 		} else {
@@ -354,20 +351,24 @@ podcast_add_dialog_closed_cb (RBPodcastAddDialog *dialog, RBPodcastSource *sourc
 static void
 yank_clipboard_url (GtkClipboard *clipboard, const char *text, RBPodcastSource *source)
 {
-	SoupURI *uri;
+	GUri *uri;
+	const char *scheme;
 
 	if (text == NULL) {
 		return;
 	}
 
-	uri = soup_uri_new (text);
-	if (SOUP_URI_VALID_FOR_HTTP (uri)) {
+	uri = g_uri_parse (text, SOUP_HTTP_URI_FLAGS, NULL);
+	if (uri == NULL) {
+		return;
+	}
+
+	scheme = g_uri_get_scheme (uri);
+	if ((g_strcmp0 (scheme, "http") == 0) || (g_strcmp0 (scheme, "https") == 0)) {
 		rb_podcast_add_dialog_reset (RB_PODCAST_ADD_DIALOG (source->priv->add_dialog), text, FALSE);
 	}
 
-	if (uri != NULL) {
-		soup_uri_free (uri);
-	}
+	g_uri_unref (uri);
 }
 
 static void
@@ -453,16 +454,17 @@ podcast_download_cancel_action_cb (GSimpleAction *action, GVariant *parameter, g
 
 	lst = rb_entry_view_get_selected_entries (posts);
 	g_value_init (&val, G_TYPE_ULONG);
+	g_value_set_ulong (&val, RHYTHMDB_PODCAST_STATUS_PAUSED);
 
 	while (lst != NULL) {
 		RhythmDBEntry *entry  = (RhythmDBEntry *) lst->data;
 		gulong status = rhythmdb_entry_get_ulong (entry, RHYTHMDB_PROP_STATUS);
 
-		if ((status > 0 && status < RHYTHMDB_PODCAST_STATUS_COMPLETE) ||
+		if (status < RHYTHMDB_PODCAST_STATUS_COMPLETE ||
 		    status == RHYTHMDB_PODCAST_STATUS_WAITING) {
-			g_value_set_ulong (&val, RHYTHMDB_PODCAST_STATUS_PAUSED);
-			rhythmdb_entry_set (source->priv->db, entry, RHYTHMDB_PROP_STATUS, &val);
-			rb_podcast_manager_cancel_download (source->priv->podcast_mgr, entry);
+			if (rb_podcast_manager_cancel_download (source->priv->podcast_mgr, entry) == FALSE) {
+				rhythmdb_entry_set (source->priv->db, entry, RHYTHMDB_PROP_STATUS, &val);
+			}
 		}
 
 		lst = lst->next;
@@ -766,8 +768,8 @@ podcast_feed_pixbuf_cell_data_func (GtkTreeViewColumn *column,
 	g_free (title);
 
 	if (entry != NULL) {
-		gulong status = rhythmdb_entry_get_ulong (entry, RHYTHMDB_PROP_STATUS);
-		if (status == RHYTHMDB_PODCAST_FEED_STATUS_UPDATING) {
+		const char *url = rhythmdb_entry_get_string (entry, RHYTHMDB_PROP_LOCATION);
+		if (rb_podcast_manager_feed_updating (source->priv->podcast_mgr, url)) {
 			pixbuf = source->priv->refresh_pixbuf;
 		} else if (rhythmdb_entry_get_string (entry, RHYTHMDB_PROP_PLAYBACK_ERROR)) {
 			pixbuf = source->priv->error_pixbuf;
@@ -819,6 +821,13 @@ podcast_post_feed_sort_func (RhythmDBEntry *a,
 	ret = strcmp (a_str, b_str);
 	if (ret != 0)
 		return ret;
+
+	/* position in the feed (if available) */
+	a_val = rhythmdb_entry_get_ulong (a, RHYTHMDB_PROP_TRACK_NUMBER);
+	b_val = rhythmdb_entry_get_ulong (b, RHYTHMDB_PROP_TRACK_NUMBER);
+
+	if (a_val != b_val)
+		return (a_val < b_val) ? 1 : -1;
 
 	a_val = rhythmdb_entry_get_ulong (a, RHYTHMDB_PROP_POST_TIME);
 	b_val = rhythmdb_entry_get_ulong (b, RHYTHMDB_PROP_POST_TIME);
@@ -900,7 +909,7 @@ podcast_entry_changed_cb (RhythmDB *db,
 
 		switch (change->prop) {
 		case RHYTHMDB_PROP_PLAYBACK_ERROR:
-		case RHYTHMDB_PROP_STATUS:
+		case RHYTHMDB_PROP_TITLE:
 			feed_changed = TRUE;
 			break;
 		default:
@@ -1022,13 +1031,10 @@ impl_add_to_queue (RBSource *source, RBSource *queue)
 
 	for (iter = selection; iter; iter = iter->next) {
 		RhythmDBEntry *entry = (RhythmDBEntry *)iter->data;
-		if (!rb_podcast_manager_entry_downloaded (entry))
-			continue;
 		rb_static_playlist_source_add_entry (RB_STATIC_PLAYLIST_SOURCE (queue),
 						     entry, -1);
+		rhythmdb_entry_unref (entry);
 	}
-
-	g_list_foreach (selection, (GFunc)rhythmdb_entry_unref, NULL);
 	g_list_free (selection);
 }
 
@@ -1223,6 +1229,25 @@ impl_get_status (RBDisplayPage *page, char **text, gboolean *busy)
 	}
 
 	g_object_get (source->priv->podcast_mgr, "updating", busy, NULL);
+}
+
+static void
+feed_update_status_cb (RBPodcastManager *mgr,
+		       const char *url,
+		       RBPodcastFeedUpdateStatus status,
+		       const char *error,
+		       gpointer data)
+{
+	RBPodcastSource *source = RB_PODCAST_SOURCE (data);
+	GtkTreeIter iter;
+
+	if (rhythmdb_property_model_iter_from_string (source->priv->feed_model, url, &iter)) {
+		GtkTreePath *path;
+
+		path = gtk_tree_model_get_path (GTK_TREE_MODEL (source->priv->feed_model), &iter);
+		gtk_tree_model_row_changed (GTK_TREE_MODEL (source->priv->feed_model), path, &iter);
+		gtk_tree_path_free (path);
+	}
 }
 
 static void
@@ -1583,6 +1608,7 @@ impl_constructed (GObject *object)
 	g_object_unref (accel_group);
 	g_object_unref (shell);
 
+	g_signal_connect_object (source->priv->podcast_mgr, "feed-update-status", G_CALLBACK (feed_update_status_cb), source, 0);
 	g_signal_connect (source->priv->podcast_mgr, "notify::updating", G_CALLBACK (podcast_manager_updating_cb), source);
 
 	rb_podcast_source_do_query (source, TRUE);

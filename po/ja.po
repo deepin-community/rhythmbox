@@ -1,5 +1,5 @@
 # rhythmbox ja.po.
-# Copyright (C) 2002-2019 rhythmbox's COPYRIHGT HOLDER
+# Copyright (C) 2002-2014, 2016, 2019-2021 rhythmbox's COPYRIHGT HOLDER
 # Norihiro UMEDA <norihiro@users.sourceforge.jp>, 2002-2003.
 # Takeshi AIHANA <takeshi.aihana@gmail.com>, 2003-2009.
 # Mitsuya Shibata <mty.shibata@gmail.com>, 2009.
@@ -8,17 +8,17 @@
 # Hiroshi Tagawa <kuponuga@gmail.com>, 2010.
 # Kiyotaka NISHIBORI <ml.nishibori.kiyotaka@gmail.com>, 2010.
 # OKANO Takayoshi <kano@na.rim.or.jp>, 2011-2012.
-# Kentaro KAZUHAMA <kazken3@gmail.com>, 2012.
+# Kentaro KAZUHAMA <kazken3@gmail.com>, 2012, 2020.
 # Jiro Matsuzawa <jmatsuzawa@gnome.org>, 2012-2014.
 # Hajime Taira <htaira@redhat.com>, 2016.
-# sicklylife <translation@sicklylife.jp>, 2019.
+# sicklylife <translation@sicklylife.jp>, 2019-2021.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: rhythmbox master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/GNOME/rhythmbox/issues\n"
-"POT-Creation-Date: 2019-09-26 10:31+0000\n"
-"PO-Revision-Date: 2019-09-27 23:00+0900\n"
+"POT-Creation-Date: 2020-07-25 08:32+0000\n"
+"PO-Revision-Date: 2021-10-20 19:30+0900\n"
 "Last-Translator: sicklylife <translation@sicklylife.jp>\n"
 "Language-Team: Japanese <gnome-translation@gnome.gr.jp>\n"
 "Language: ja\n"
@@ -119,8 +119,8 @@ msgid "My Top Rated"
 msgstr "トップ10"
 
 #: ../data/rhythmbox.appdata.xml.in.h:1 ../data/rhythmbox.desktop.in.in.h:1
-#: ../data/rhythmbox-device.desktop.in.in.h:1 ../shell/main.c:78
-#: ../shell/rb-shell.c:512 ../shell/rb-shell.c:2384
+#: ../data/rhythmbox-device.desktop.in.in.h:1 ../shell/main.c:79
+#: ../shell/rb-shell.c:515 ../shell/rb-shell.c:2389
 msgid "Rhythmbox"
 msgstr "Rhythmbox"
 
@@ -516,7 +516,7 @@ msgstr "メディアプレイヤーのプロパティ"
 #: ../data/ui/media-player-properties.ui.h:2 ../plugins/daap/daap-prefs.ui.h:11
 #: ../plugins/iradio/rb-station-properties-dialog.c:182
 #: ../podcast/rb-feed-podcast-properties-dialog.c:130
-#: ../podcast/rb-podcast-properties-dialog.c:318
+#: ../podcast/rb-podcast-properties-dialog.c:320
 #: ../shell/rb-shell-preferences.c:192 ../widgets/rb-alert-dialog.c:377
 #: ../widgets/rb-query-creator.c:198 ../widgets/rb-song-info.c:627
 msgid "_Close"
@@ -629,12 +629,11 @@ msgstr "プレイリスト"
 
 #: ../data/ui/podcast-add-dialog.ui.h:1
 msgid ""
-"Search for podcasts in the iTunes Store and on Miroguide.com, or enter a "
-"podcast feed URL.\n"
+"Search for podcasts in the iTunes Store, or enter a podcast feed URL.\n"
 "Subscribe to podcasts to download new episodes as they are published."
 msgstr ""
-"iTunes StoreやMiroguide.comのポッドキャストを検索するか、ポッドキャストフィー"
-"ドのURLを入力します。\n"
+"iTunes Storeのポッドキャストを検索するか、ポッドキャストフィードのURLを入力し"
+"ます。\n"
 "発行済みの新しいエピソードをダウンロードするにはポッドキャストを購読します。"
 
 #: ../data/ui/podcast-add-dialog.ui.h:4
@@ -978,7 +977,7 @@ msgstr "%Y年%B%-d日"
 #. don't search for 'unknown' when we don't have the artist or title information
 #. Translators: unknown track title
 #: ../lib/rb-cut-and-paste-code.c:158 ../lib/rb-util.c:581
-#: ../plugins/android/rb-android-source.c:687
+#: ../plugins/android/rb-android-source.c:715
 #: ../plugins/artsearch/lastfm.py:163 ../plugins/artsearch/lastfm.py:164
 #: ../plugins/artsearch/songinfo.py:93
 #: ../plugins/audiocd/rb-audiocd-source.c:526
@@ -998,10 +997,10 @@ msgstr "%Y年%B%-d日"
 #: ../plugins/mtpdevice/rb-mtp-source.c:1450
 #: ../plugins/notification/rb-notification-plugin.c:512
 #: ../podcast/rb-feed-podcast-properties-dialog.c:339
-#: ../podcast/rb-podcast-add-dialog.c:609 ../podcast/rb-podcast-manager.c:1926
-#: ../podcast/rb-podcast-manager.c:2025
-#: ../podcast/rb-podcast-properties-dialog.c:639
-#: ../podcast/rb-podcast-properties-dialog.c:703
+#: ../podcast/rb-podcast-add-dialog.c:609 ../podcast/rb-podcast-manager.c:1929
+#: ../podcast/rb-podcast-manager.c:2028
+#: ../podcast/rb-podcast-properties-dialog.c:641
+#: ../podcast/rb-podcast-properties-dialog.c:705
 #: ../podcast/rb-podcast-source.c:794 ../remote/dbus/rb-client.c:215
 #: ../remote/dbus/rb-client.c:732 ../rhythmdb/rhythmdb.c:2068
 #: ../rhythmdb/rhythmdb.c:2074 ../rhythmdb/rhythmdb.c:2089
@@ -1015,19 +1014,19 @@ msgstr "%Y年%B%-d日"
 #: ../shell/rb-shell-player.c:2714 ../shell/rb-shell-player.c:2716
 #: ../widgets/rb-entry-view.c:995 ../widgets/rb-entry-view.c:1017
 #: ../widgets/rb-entry-view.c:1508 ../widgets/rb-entry-view.c:1520
-#: ../widgets/rb-entry-view.c:1532 ../widgets/rb-header.c:1274
-#: ../widgets/rb-header.c:1300 ../widgets/rb-song-info.c:950
+#: ../widgets/rb-entry-view.c:1532 ../widgets/rb-header.c:1275
+#: ../widgets/rb-header.c:1301 ../widgets/rb-song-info.c:950
 #: ../widgets/rb-song-info.c:962 ../widgets/rb-song-info.c:1234
 #: ../widgets/rb-song-info.c:1573
 msgid "Unknown"
 msgstr "不明"
 
-#: ../lib/rb-file-helpers.c:471
+#: ../lib/rb-file-helpers.c:475
 #, c-format
 msgid "Too many symlinks"
 msgstr "シンボリックリンクが多すぎます"
 
-#: ../lib/rb-file-helpers.c:1305
+#: ../lib/rb-file-helpers.c:1309
 #, c-format
 msgid "Cannot get free space at %s: %s"
 msgstr "%sで空き領域を確保できませんでした: %s"
@@ -1160,21 +1159,25 @@ msgstr "トラック:"
 msgid "Playlists:"
 msgstr "プレイリスト:"
 
-#: ../plugins/android/rb-android-source.c:201
+#: ../plugins/android/rb-android-source.c:203
 msgid ""
 "No storage areas found on this device. You may need to unlock it and enable "
 "MTP."
 msgstr ""
-"このデバイスにはストレージ領域が見つかりません。ロックを解除してMTPを有効化し"
-"てください。"
+"このデバイスのストレージ領域が見つかりませんでした。ロックを解除してMTPを有効"
+"にしてください。"
 
-#: ../plugins/android/rb-android-source.c:401
+#: ../plugins/android/rb-android-source.c:391
 #: ../plugins/generic-player/rb-generic-player-source.c:565
 #, c-format
 msgid "Scanning %s"
 msgstr "%sのスキャン中..."
 
-#: ../plugins/android/rb-android-source.c:781
+#: ../plugins/android/rb-android-source.c:414
+msgid "Error mounting Android device"
+msgstr "Androidデバイスのマウント中にエラーが発生しました"
+
+#: ../plugins/android/rb-android-source.c:809
 #: ../plugins/mtpdevice/rb-mtp-source.c:1138
 #: ../sources/rb-library-source.c:1198 ../sources/rb-library-source.c:1202
 #: ../sources/rb-transfer-target.c:182
@@ -1986,7 +1989,7 @@ msgid "Browse various local and Internet media sources"
 msgstr "さまざまなローカルやインターネットのメディアソースを表示"
 
 #: ../plugins/grilo/rb-grilo-source.c:403
-#: ../plugins/soundcloud/soundcloud.py:492
+#: ../plugins/soundcloud/soundcloud.py:486
 msgid "Fetch more tracks"
 msgstr "さらにトラックを取得"
 
@@ -2165,14 +2168,14 @@ msgstr "インターネットラジオ局のURL:"
 
 #: ../plugins/iradio/rb-station-properties-dialog.c:395
 #: ../podcast/rb-feed-podcast-properties-dialog.c:215
-#: ../podcast/rb-podcast-properties-dialog.c:524
+#: ../podcast/rb-podcast-properties-dialog.c:526
 #: ../sources/rb-media-player-source.c:567 ../widgets/rb-song-info.c:1151
 #, c-format
 msgid "%s Properties"
 msgstr "%sのプロパティ"
 
 #: ../plugins/iradio/rb-station-properties-dialog.c:487
-#: ../podcast/rb-podcast-properties-dialog.c:637
+#: ../podcast/rb-podcast-properties-dialog.c:639
 #: ../widgets/rb-entry-view.c:1021 ../widgets/rb-song-info.c:1236
 #, c-format
 msgid "%lu kbps"
@@ -2201,7 +2204,7 @@ msgstr "赤外線リモコンを使ってRhythmboxをコントロールします
 
 #: ../plugins/listenbrainz/listenbrainz.plugin.in.h:1
 msgid "ListenBrainz"
-msgstr ""
+msgstr "ListenBrainz"
 
 #: ../plugins/listenbrainz/listenbrainz.plugin.in.h:2
 msgid "Submit your listens to ListenBrainz"
@@ -2519,34 +2522,34 @@ msgstr "http://www.magnatune.com/info/"
 msgid "Magnatune"
 msgstr "Magnatune"
 
-#: ../plugins/magnatune/MagnatuneSource.py:192
+#: ../plugins/magnatune/MagnatuneSource.py:190
 msgid "Couldn't download album"
 msgstr "アルバムをダウンロードできませんでした"
 
-#: ../plugins/magnatune/MagnatuneSource.py:193
+#: ../plugins/magnatune/MagnatuneSource.py:191
 msgid "You must have a library location set to download an album."
 msgstr "アルバムをダウンロードするにはライブラリの場所が必要です"
 
-#: ../plugins/magnatune/MagnatuneSource.py:255
+#: ../plugins/magnatune/MagnatuneSource.py:253
 msgid "Unable to load catalog"
 msgstr "カタログを読み込めません"
 
-#: ../plugins/magnatune/MagnatuneSource.py:256
+#: ../plugins/magnatune/MagnatuneSource.py:254
 msgid ""
 "Rhythmbox could not understand the Magnatune catalog, please file a bug."
 msgstr ""
 "Magnatuneのカタログを解析できませんでした、バグとして報告してください。"
 
-#: ../plugins/magnatune/MagnatuneSource.py:277
-#: ../plugins/magnatune/MagnatuneSource.py:334
+#: ../plugins/magnatune/MagnatuneSource.py:275
+#: ../plugins/magnatune/MagnatuneSource.py:332
 msgid "Loading Magnatune catalog"
 msgstr "Magnatuneからカタログの入手中"
 
-#: ../plugins/magnatune/MagnatuneSource.py:406
+#: ../plugins/magnatune/MagnatuneSource.py:404
 msgid "Download Error"
 msgstr "ダウンロードエラー"
 
-#: ../plugins/magnatune/MagnatuneSource.py:407
+#: ../plugins/magnatune/MagnatuneSource.py:405
 #, python-format
 msgid ""
 "An error occurred while trying to authorize the download.\n"
@@ -2557,11 +2560,11 @@ msgstr ""
 "Magnatuneサーバーからの応答:\n"
 "%s"
 
-#: ../plugins/magnatune/MagnatuneSource.py:410 ../widgets/rb-entry-view.c:1628
+#: ../plugins/magnatune/MagnatuneSource.py:408 ../widgets/rb-entry-view.c:1628
 msgid "Error"
 msgstr "エラー"
 
-#: ../plugins/magnatune/MagnatuneSource.py:411
+#: ../plugins/magnatune/MagnatuneSource.py:409
 #, python-format
 msgid ""
 "An error occurred while trying to download the album.\n"
@@ -2572,7 +2575,7 @@ msgstr ""
 "エラーメッセージ:\n"
 "%s"
 
-#: ../plugins/magnatune/MagnatuneSource.py:500
+#: ../plugins/magnatune/MagnatuneSource.py:492
 msgid "Downloading from Magnatune"
 msgstr "Magnatuneからダウンロード中"
 
@@ -2684,7 +2687,7 @@ msgid "from <i>%s</i>"
 msgstr "アルバム:<i>%s</i>"
 
 #: ../plugins/notification/rb-notification-plugin.c:416
-#: ../widgets/rb-header.c:366
+#: ../widgets/rb-header.c:367
 msgid "Not Playing"
 msgstr "再生していません"
 
@@ -2796,7 +2799,7 @@ msgstr "クリッピングを妨げるためにコンプレッションを適用
 
 #: ../plugins/replaygain/replaygain-prefs.ui.h:7
 msgid "Learn more about ReplayGain"
-msgstr ""
+msgstr "ReplayGainについて"
 
 #: ../plugins/soundcloud/soundcloud.plugin.in.h:1
 #: ../plugins/soundcloud/soundcloud.py:72
@@ -2839,25 +2842,13 @@ msgstr "SoundCloudでユーザーを検索"
 msgid "SoundCloud Users"
 msgstr "SoundCloudのユーザー"
 
-#: ../plugins/soundcloud/soundcloud.py:117
-msgid "Search groups"
-msgstr "グループを検索"
-
-#: ../plugins/soundcloud/soundcloud.py:118
-msgid "Search groups on SoundCloud"
-msgstr "SoundCloudでグループを検索"
-
-#: ../plugins/soundcloud/soundcloud.py:119
-msgid "SoundCloud Groups"
-msgstr "SoundCloudのグループ"
-
-#: ../plugins/soundcloud/soundcloud.py:442
-#: ../plugins/soundcloud/soundcloud.py:450
+#: ../plugins/soundcloud/soundcloud.py:436
+#: ../plugins/soundcloud/soundcloud.py:444
 #, python-format
 msgid "View '%(title)s' on SoundCloud"
 msgstr "SoundCloudの'%(title)s'を確認する"
 
-#: ../plugins/soundcloud/soundcloud.py:458
+#: ../plugins/soundcloud/soundcloud.py:452
 #, python-format
 msgid "View '%(container)s' on SoundCloud"
 msgstr "SoundCloudの'%(container)s'を確認する"
@@ -2886,7 +2877,7 @@ msgstr "ウェブリモートコントロール"
 msgid "Control Rhythmbox from a web browser"
 msgstr "ウェブブラウザーからRhythmboxをコントロールします"
 
-#: ../plugins/webremote/webremote.py:585
+#: ../plugins/webremote/webremote.py:584
 msgid "Launch web remote control"
 msgstr "ウェブリモートコントロールを起動"
 
@@ -2894,7 +2885,7 @@ msgstr "ウェブリモートコントロールを起動"
 #, c-format
 msgid "%d feed"
 msgid_plural "%d feeds"
-msgstr[0] "%d個の配信元"
+msgstr[0] "%d個のフィード"
 
 #: ../podcast/rb-podcast-add-dialog.c:306
 msgid "Unable to load the feed. Check your network connection."
@@ -2936,6 +2927,10 @@ msgstr "新規ダウンロード"
 msgid "Downloading podcast"
 msgstr "Podcastのダウンロード中"
 
+#: ../podcast/rb-podcast-main-source.c:185
+msgid "Error downloading podcast"
+msgstr "Podcastのダウンロードエラー"
+
 #: ../podcast/rb-podcast-main-source.c:181
 msgid "Finished downloading podcast"
 msgstr "Podcastのダウンロードが完了しました"
@@ -2962,21 +2957,21 @@ msgstr "Podcastのダウンロードディレクトリを作成中にエラー�
 msgid "Unable to create the download directory for %s: %s"
 msgstr "ダウンロードディレクトリ%sの作成に失敗しました: %s"
 
-#: ../podcast/rb-podcast-manager.c:1045
+#: ../podcast/rb-podcast-manager.c:1046
 msgid "Invalid URL"
 msgstr "URLが間違っています"
 
-#: ../podcast/rb-podcast-manager.c:1046
+#: ../podcast/rb-podcast-manager.c:1047
 #, c-format
 msgid "The URL \"%s\" is not valid, please check it."
 msgstr "そのURL\"%s\"は正しくありません。確認してください。"
 
 #. added as something else, probably iradio
-#: ../podcast/rb-podcast-manager.c:1057
+#: ../podcast/rb-podcast-manager.c:1058
 msgid "URL already added"
 msgstr "URLは追加済みです"
 
-#: ../podcast/rb-podcast-manager.c:1058
+#: ../podcast/rb-podcast-manager.c:1059
 #, c-format
 msgid ""
 "The URL \"%s\" has already been added as a radio station. If this is a "
@@ -2985,7 +2980,7 @@ msgstr ""
 "そのURL\"%s\"は、すでにラジオ局として存在しています。これがPodcastの配信元な"
 "らば、ラジオ局から削除してください。"
 
-#: ../podcast/rb-podcast-manager.c:1158
+#: ../podcast/rb-podcast-manager.c:1159
 #, c-format
 msgid ""
 "The URL '%s' does not appear to be a podcast feed. It may be the wrong URL, "
@@ -2995,11 +2990,11 @@ msgstr ""
 "URL'%s'はPodcastの配信元ではないようです。おそらくURLが間違っているか、あるい"
 "は配信元の内容が壊れています。それでもRhythmboxから試してみますか?"
 
-#: ../podcast/rb-podcast-manager.c:1274
+#: ../podcast/rb-podcast-manager.c:1275
 msgid "Podcast"
 msgstr "Podcast"
 
-#: ../podcast/rb-podcast-manager.c:2240
+#: ../podcast/rb-podcast-manager.c:2245
 #, c-format
 msgid "There was a problem adding this podcast: %s.  Please verify the URL: %s"
 msgstr ""
@@ -3026,7 +3021,7 @@ msgstr "配信元の内容を解析できません"
 msgid "The feed does not contain any downloadable items"
 msgstr "配信元にダウンロード可能な項目が存在しません"
 
-#: ../podcast/rb-podcast-properties-dialog.c:587
+#: ../podcast/rb-podcast-properties-dialog.c:589
 msgid "Not Downloaded"
 msgstr "ダウンロードしない"
 
@@ -3164,7 +3159,7 @@ msgstr "現在再生中ならば停止する"
 msgid "Toggle play/pause mode"
 msgstr "再生と一時停止モードを切り替える"
 
-#: ../remote/dbus/rb-client.c:110 ../shell/rb-shell.c:2290
+#: ../remote/dbus/rb-client.c:110 ../shell/rb-shell.c:2295
 msgid "Stop playback"
 msgstr "再生を停止します"
 
@@ -3674,45 +3669,45 @@ msgstr "不明なプレイリスト: %s"
 msgid "Playlist %s is an automatic playlist"
 msgstr "%sはオートプレイリストです"
 
-#: ../shell/rb-shell.c:2083
+#: ../shell/rb-shell.c:2088
 msgid "Error while saving song information"
 msgstr "楽曲情報を保存する際にエラー"
 
-#: ../shell/rb-shell.c:2287
+#: ../shell/rb-shell.c:2292
 msgid "Pause playback"
 msgstr "一時停止します"
 
-#: ../shell/rb-shell.c:2294
+#: ../shell/rb-shell.c:2299
 msgid "Start playback"
 msgstr "再生を開始します"
 
 #. Translators: %s is the song name
-#: ../shell/rb-shell.c:2404
+#: ../shell/rb-shell.c:2409
 #, c-format
 msgid "%s (Paused)"
 msgstr "%s (一時停止中)"
 
-#: ../shell/rb-shell.c:2801 ../sources/rb-play-queue-source.c:664
+#: ../shell/rb-shell.c:2806 ../sources/rb-play-queue-source.c:664
 #, c-format
 msgid "No registered source can handle URI %s"
 msgstr "URI%sを処理できるソースが登録されていません"
 
-#: ../shell/rb-shell.c:3130
+#: ../shell/rb-shell.c:3135
 #, c-format
 msgid "No registered source matches URI %s"
 msgstr "URI%sに一致する登録されたソースはありません"
 
-#: ../shell/rb-shell.c:3163 ../shell/rb-shell.c:3206
+#: ../shell/rb-shell.c:3168 ../shell/rb-shell.c:3211
 #, c-format
 msgid "Unknown song URI: %s"
 msgstr "不明な曲のURI: %s"
 
-#: ../shell/rb-shell.c:3215
+#: ../shell/rb-shell.c:3220
 #, c-format
 msgid "Unknown property %s"
 msgstr "不明なプロパティ%s"
 
-#: ../shell/rb-shell.c:3229
+#: ../shell/rb-shell.c:3234
 #, c-format
 msgid "Invalid property type %s for property %s"
 msgstr "プロパティ%2$sの種類%1$sが間違っています"
@@ -4074,11 +4069,11 @@ msgid "Play Queue"
 msgstr "再生キュー"
 
 #. Translators: format is "<title> by <artist> from <album>"
-#: ../sources/rb-play-queue-source.c:478 ../widgets/rb-header.c:924
+#: ../sources/rb-play-queue-source.c:478 ../widgets/rb-header.c:925
 msgid "by"
 msgstr "【アーティスト】"
 
-#: ../sources/rb-play-queue-source.c:478 ../widgets/rb-header.c:925
+#: ../sources/rb-play-queue-source.c:478 ../widgets/rb-header.c:926
 msgid "from"
 msgstr "【アルバム名】"
 
@@ -4157,15 +4152,19 @@ msgstr "はい(_Y)"
 msgid "_Open"
 msgstr "開く(_O)"
 
-#: ../widgets/rb-encoding-settings.c:54
+#: ../widgets/rb-encoding-settings.c:55
 msgid "Constant bit rate"
 msgstr "固定ビットレート"
 
-#: ../widgets/rb-encoding-settings.c:55
+#: ../widgets/rb-encoding-settings.c:56
 msgid "Variable bit rate"
 msgstr "可変ビットレート"
 
-#: ../widgets/rb-encoding-settings.c:402
+#: ../widgets/rb-encoding-settings.c:57
+msgid "Constrained Variable bit rate"
+msgstr "制約付き可変ビットレート"
+
+#: ../widgets/rb-encoding-settings.c:404
 msgid "Default settings"
 msgstr "デフォルトの形式"
 
@@ -4243,13 +4242,13 @@ msgid "Drop artwork here"
 msgstr "ココに画像をドロップしてください"
 
 #. Translators: remaining time / total time
-#: ../widgets/rb-header.c:1214
+#: ../widgets/rb-header.c:1215
 #, c-format
 msgid "-%s / %s"
 msgstr "-%s / %s"
 
 #. Translators: elapsed time / total time
-#: ../widgets/rb-header.c:1225
+#: ../widgets/rb-header.c:1226
 #, c-format
 msgid "%s / %s"
 msgstr "%s / %s"
@@ -4673,6 +4672,15 @@ msgstr "このデスクトップ"
 #: ../widgets/rb-song-info.c:1340
 msgid "Unknown location"
 msgstr "不明な場所"
+
+#~ msgid "Search groups"
+#~ msgstr "グループを検索"
+
+#~ msgid "Search groups on SoundCloud"
+#~ msgstr "SoundCloudでグループを検索"
+
+#~ msgid "SoundCloud Groups"
+#~ msgstr "SoundCloudのグループ"
 
 #~ msgid "Send tracks"
 #~ msgstr "トラック情報を送る"

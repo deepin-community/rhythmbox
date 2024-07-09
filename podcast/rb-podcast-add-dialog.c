@@ -125,7 +125,7 @@ remove_all_feeds_cb (GtkTreeModel *model, GtkTreePath *path, GtkTreeIter *iter, 
 {
 	RBPodcastChannel *channel;
 	gtk_tree_model_get (model, iter, FEED_COLUMN_PARSED_FEED, &channel, -1);
-	rb_podcast_parse_channel_free (channel);
+	rb_podcast_parse_channel_unref (channel);
 	return FALSE;
 }
 
@@ -150,20 +150,25 @@ static void
 add_posts_for_feed (RBPodcastAddDialog *dialog, RBPodcastChannel *channel)
 {
 	GList *l;
+	gulong position;
 
+	position = 1;
 	for (l = channel->posts; l != NULL; l = l->next) {
 		RBPodcastItem *item = (RBPodcastItem *) l->data;
 
 		rb_podcast_manager_add_post (dialog->priv->db,
 					     TRUE,
+					     NULL,
 					     channel->title ? channel->title : channel->url,
 					     item->title,
 					     channel->url,
 					     (item->author ? item->author : channel->author),
 					     item->url,
 					     item->description,
+					     item->guid,
 					     (item->pub_date > 0 ? item->pub_date : channel->pub_date),
 					     item->duration,
+					     position++,
 					     item->filesize);
 	}
 
@@ -220,6 +225,8 @@ insert_search_result (RBPodcastAddDialog *dialog, RBPodcastChannel *channel, gbo
 	GtkTreeIter iter;
 	GFile *image_file;
 	int episodes;
+
+	rb_podcast_parse_channel_ref (channel);
 
 	if (channel->posts) {
 		episodes = g_list_length (channel->posts);
@@ -280,139 +287,162 @@ update_feed_status (RBPodcastAddDialog *dialog)
 
 typedef struct {
 	RBPodcastAddDialog *dialog;
-	char *url;
 	RBPodcastChannel *channel;
 	gboolean existing;
 	gboolean single;
-	GError *error;
 	int reset_count;
-} ParseThreadData;
+} ParseData;
 
-static gboolean
-parse_finished (ParseThreadData *data)
+static void
+parse_cb (RBPodcastChannel *channel, GError *error, gpointer user_data)
 {
+	ParseData *data = user_data;
+	gboolean is_selected_channel = FALSE;
+
+	g_assert (channel == data->channel);
+
 	if (data->reset_count != data->dialog->priv->reset_count) {
 		rb_debug ("dialog reset while parsing");
-		rb_podcast_parse_channel_free (data->channel);
+		rb_podcast_parse_channel_unref (channel);
 		g_object_unref (data->dialog);
-		g_clear_error (&data->error);
-		g_free (data->url);
 		g_free (data);
-		return FALSE;
+		return;
 	}
 
-	if (data->error != NULL) {
-		gtk_label_set_label (GTK_LABEL (data->dialog->priv->info_bar_message),
-				     _("Unable to load the feed. Check your network connection."));
-		gtk_widget_show (data->dialog->priv->info_bar);
+	/* get selected feed if any */
+	if (data->dialog->priv->have_selection) {
+		RBPodcastChannel *selected_channel;
+		gtk_tree_model_get (GTK_TREE_MODEL (data->dialog->priv->feed_model),
+				    &data->dialog->priv->selected_feed,
+				    FEED_COLUMN_PARSED_FEED, &selected_channel,
+				    -1);
+		if (channel == selected_channel)
+			is_selected_channel = TRUE;
+	}
+
+	if (error != NULL) {
+		if (channel->title == NULL || channel->title[0] == '\0') {
+			/* fake up a channel with just the url as the
+			 * title, allowing the user to subscribe to
+			 * the podcast anyway.
+			 */
+			channel->title = g_strdup (channel->url);
+		}
+
+		if (is_selected_channel) {
+			const char *message;
+			if (g_error_matches (error, RB_PODCAST_PARSE_ERROR, RB_PODCAST_PARSE_ERROR_NO_ITEMS)) {
+				message = error->message;
+			} else {
+				message = _("Unable to load the feed. Check your network connection.");
+			}
+
+			gtk_label_set_label (GTK_LABEL (data->dialog->priv->info_bar_message), message);
+			gtk_widget_show (data->dialog->priv->info_bar);
+		}
 	} else {
-		gtk_widget_hide (data->dialog->priv->info_bar);
+		if (is_selected_channel) {
+			gtk_widget_hide (data->dialog->priv->info_bar);
+		}
 	}
 
-	if (data->channel->is_opml) {
+	if (channel->is_opml) {
 		GList *l;
 		/* convert each item into its own channel */
-		for (l = data->channel->posts; l != NULL; l = l->next) {
+		for (l = channel->posts; l != NULL; l = l->next) {
 			RBPodcastChannel *channel;
 			RBPodcastItem *item;
 
 			item = l->data;
-			channel = g_new0 (RBPodcastChannel, 1);
+			channel = rb_podcast_parse_channel_new ();
 			channel->url = g_strdup (item->url);
 			channel->title = g_strdup (item->title);
 			/* none of the other fields get populated anyway */
 			insert_search_result (data->dialog, channel, FALSE);
+			rb_podcast_parse_channel_unref (channel);
 		}
 		update_feed_status (data->dialog);
-		rb_podcast_parse_channel_free (data->channel);
 	} else if (data->existing) {
-		/* find the row for the feed, replace the channel */
 		GtkTreeIter iter;
 		gboolean found = FALSE;
 
+		/* find the row for the feed */
 		if (gtk_tree_model_get_iter_first (GTK_TREE_MODEL (data->dialog->priv->feed_model), &iter)) {
 			do {
-				RBPodcastChannel *channel;
+				RBPodcastChannel *rchannel;
 				gtk_tree_model_get (GTK_TREE_MODEL (data->dialog->priv->feed_model), &iter,
-						    FEED_COLUMN_PARSED_FEED, &channel,
+						    FEED_COLUMN_PARSED_FEED, &rchannel,
 						    -1);
-				if (g_strcmp0 (channel->url, data->url) == 0) {
-					gtk_list_store_set (data->dialog->priv->feed_model,
-							    &iter,
-							    FEED_COLUMN_PARSED_FEED, data->channel,
-							    -1);
+				if (g_strcmp0 (rchannel->url, channel->url) == 0) {
 					found = TRUE;
-					rb_podcast_parse_channel_free (channel);
 					break;
 				}
 			} while (gtk_tree_model_iter_next (GTK_TREE_MODEL (data->dialog->priv->feed_model), &iter));
 		}
 
 		/* if the row is selected, create entries for the channel contents */
-		if (found == FALSE) {
-			rb_podcast_parse_channel_free (data->channel);
-		} else if (data->dialog->priv->have_selection) {
+		if (found && data->dialog->priv->have_selection) {
 			GtkTreePath *a;
 			GtkTreePath *b;
 
 			a = gtk_tree_model_get_path (GTK_TREE_MODEL (data->dialog->priv->feed_model), &iter);
 			b = gtk_tree_model_get_path (GTK_TREE_MODEL (data->dialog->priv->feed_model), &data->dialog->priv->selected_feed);
 			if (gtk_tree_path_compare (a, b) == 0) {
-				add_posts_for_feed (data->dialog, data->channel);
+				add_posts_for_feed (data->dialog, channel);
 			}
 
 			gtk_tree_path_free (a);
 			gtk_tree_path_free (b);
 		}
 	} else {
-		/* model owns data->channel now */
-		insert_search_result (data->dialog, data->channel, data->single);
+		insert_search_result (data->dialog, channel, data->single);
 		update_feed_status (data->dialog);
 	}
 
+	rb_podcast_parse_channel_unref (channel);
 	g_object_unref (data->dialog);
-	g_clear_error (&data->error);
-	g_free (data->url);
 	g_free (data);
-	return FALSE;
-}
-
-static gpointer
-parse_thread (ParseThreadData *data)
-{
-	if (rb_podcast_parse_load_feed (data->channel, data->url, FALSE, &data->error) == FALSE) {
-		/* fake up a channel with just the url as the title, allowing the user
-		 * to subscribe to the podcast anyway.
-		 */
-		data->channel->url = g_strdup (data->url);
-		data->channel->title = g_strdup (data->url);
-	}
-
-	g_idle_add ((GSourceFunc) parse_finished, data);
-	return NULL;
 }
 
 static void
-parse_in_thread (RBPodcastAddDialog *dialog, const char *text, gboolean existing, gboolean single)
+parse_search_text (RBPodcastAddDialog *dialog, const char *text)
 {
-	ParseThreadData *data;
+	ParseData *data;
+	RBPodcastChannel *channel;
 
-	data = g_new0 (ParseThreadData, 1);
+	channel = rb_podcast_parse_channel_new ();
+	channel->url = g_strdup (text);
+
+	data = g_new0 (ParseData, 1);
 	data->dialog = g_object_ref (dialog);
-	data->url = g_strdup (text);
-	data->channel = g_new0 (RBPodcastChannel, 1);
-	data->existing = existing;
-	data->single = single;
+	data->channel = channel;
+	data->existing = FALSE;
+	data->single = TRUE;
 	data->reset_count = dialog->priv->reset_count;
 
-	g_thread_new ("podcast parser", (GThreadFunc) parse_thread, data);
+	rb_podcast_parse_load_feed (data->channel, NULL, parse_cb, data);
+}
+
+static void
+parse_search_result (RBPodcastAddDialog *dialog, RBPodcastChannel *channel)
+{
+	ParseData *data;
+
+	data = g_new0 (ParseData, 1);
+	data->dialog = g_object_ref (dialog);
+	data->channel = rb_podcast_parse_channel_ref (channel);
+	data->existing = TRUE;
+	data->single = FALSE;
+	data->reset_count = dialog->priv->reset_count;
+
+	rb_podcast_parse_load_feed (channel, NULL, parse_cb, data);
 }
 
 static void
 podcast_search_result_cb (RBPodcastSearch *search, RBPodcastChannel *feed, RBPodcastAddDialog *dialog)
 {
 	rb_debug ("got result %s from podcast search %s", feed->url, G_OBJECT_TYPE_NAME (search));
-	insert_search_result (dialog, rb_podcast_parse_channel_copy (feed), FALSE);
+	insert_search_result (dialog, feed, FALSE);
 }
 
 static void
@@ -456,14 +486,14 @@ search_cb (RBSearchEntry *entry, const char *text, RBPodcastAddDialog *dialog)
 	/* if the entered text looks like a feed URL, parse it directly */
 	for (i = 0; i < G_N_ELEMENTS (podcast_uri_prefixes); i++) {
 		if (g_str_has_prefix (text, podcast_uri_prefixes[i])) {
-			parse_in_thread (dialog, text, FALSE, TRUE);
+			parse_search_text (dialog, text);
 			return;
 		}
 	}
 
 	/* not really sure about this one */
 	if (g_path_is_absolute (text)) {
-		parse_in_thread (dialog, text, FALSE, TRUE);
+		parse_search_text (dialog, text);
 		return;
 	}
 
@@ -495,7 +525,7 @@ subscribe_selected_feed (RBPodcastAddDialog *dialog)
 			    &dialog->priv->selected_feed,
 			    FEED_COLUMN_PARSED_FEED, &channel,
 			    -1);
-	if (channel->posts != NULL) {
+	if (channel->status == RB_PODCAST_PARSE_STATUS_SUCCESS) {
 		rb_podcast_manager_add_parsed_feed (dialog->priv->podcast_mgr, channel);
 	} else {
 		rb_podcast_manager_subscribe_feed (dialog->priv->podcast_mgr, channel->url, TRUE);
@@ -517,6 +547,7 @@ subscribe_clicked_cb (GtkButton *button, RBPodcastAddDialog *dialog)
 	dialog->priv->clearing = FALSE;
 
 	gtk_tree_selection_unselect_all (gtk_tree_view_get_selection (GTK_TREE_VIEW (dialog->priv->feed_view)));
+	dialog->priv->have_selection = FALSE;
 	gtk_widget_set_sensitive (dialog->priv->subscribe_button, FALSE);
 }
 
@@ -547,6 +578,8 @@ feed_selection_changed_cb (GtkTreeSelection *selection, RBPodcastAddDialog *dial
 	if (dialog->priv->clearing)
 		return;
 
+	gtk_widget_hide (dialog->priv->info_bar);
+
 	dialog->priv->have_selection =
 		gtk_tree_selection_get_selected (selection, &model, &dialog->priv->selected_feed);
 	gtk_widget_set_sensitive (dialog->priv->subscribe_button, dialog->priv->have_selection);
@@ -562,11 +595,15 @@ feed_selection_changed_cb (GtkTreeSelection *selection, RBPodcastAddDialog *dial
 				    FEED_COLUMN_PARSED_FEED, &channel,
 				    -1);
 
-		if (channel->posts == NULL) {
+		switch (channel->status) {
+		case RB_PODCAST_PARSE_STATUS_UNPARSED:
+		case RB_PODCAST_PARSE_STATUS_ERROR:
 			rb_debug ("parsing feed %s to get posts", channel->url);
-			parse_in_thread (dialog, channel->url, TRUE, FALSE);
-		} else {
+			parse_search_result (dialog, channel);
+			break;
+		case RB_PODCAST_PARSE_STATUS_SUCCESS:
 			add_posts_for_feed (dialog, channel);
+			break;
 		}
 	}
 }
@@ -690,6 +727,7 @@ impl_constructed (GObject *object)
 	RhythmDBQuery *query;
 	RhythmDBQueryModel *query_model;
 	const char *episode_strings[3];
+	int xpad, ypad;
 
 	RB_CHAIN_GOBJECT_METHOD (rb_podcast_add_dialog_parent_class, constructed, object);
 	dialog = RB_PODCAST_ADD_DIALOG (object);
@@ -741,7 +779,11 @@ impl_constructed (GObject *object)
 						       G_TYPE_ULONG);	/* date */
 	gtk_tree_view_set_model (GTK_TREE_VIEW (dialog->priv->feed_view), GTK_TREE_MODEL (dialog->priv->feed_model));
 
-	column = gtk_tree_view_column_new_with_attributes (_("Title"), gtk_cell_renderer_pixbuf_new (), "pixbuf", FEED_COLUMN_IMAGE, NULL);
+	renderer = gtk_cell_renderer_pixbuf_new ();
+	gtk_cell_renderer_get_padding (renderer, &xpad, &ypad);
+	gtk_cell_renderer_set_fixed_size (renderer, PODCAST_IMAGE_SIZE + (xpad * 2), PODCAST_IMAGE_SIZE + (ypad * 2));
+
+	column = gtk_tree_view_column_new_with_attributes (_("Title"), renderer, "pixbuf", FEED_COLUMN_IMAGE, NULL);
 	renderer = gtk_cell_renderer_text_new ();
 	g_object_set (renderer, "ellipsize", PANGO_ELLIPSIZE_END, NULL);
 	gtk_tree_view_column_pack_start (column, renderer, TRUE);
@@ -845,14 +887,8 @@ impl_dispose (GObject *object)
 {
 	RBPodcastAddDialog *dialog = RB_PODCAST_ADD_DIALOG (object);
 
-	if (dialog->priv->podcast_mgr != NULL) {
-		g_object_unref (dialog->priv->podcast_mgr);
-		dialog->priv->podcast_mgr = NULL;
-	}
-	if (dialog->priv->db != NULL) {
-		g_object_unref (dialog->priv->db);
-		dialog->priv->db = NULL;
-	}
+	g_clear_object (&dialog->priv->podcast_mgr);
+	g_clear_object (&dialog->priv->db);
 
 	G_OBJECT_CLASS (rb_podcast_add_dialog_parent_class)->dispose (object);
 }
@@ -962,6 +998,7 @@ rb_podcast_add_dialog_reset (RBPodcastAddDialog *dialog, const char *text, gbool
 	rhythmdb_entry_delete_by_type (dialog->priv->db, RHYTHMDB_ENTRY_TYPE_PODCAST_SEARCH);
 	rhythmdb_commit (dialog->priv->db);
 
+	gtk_widget_hide (dialog->priv->info_bar);
 	rb_search_entry_set_text (dialog->priv->search_entry, text);
 
 	if (load) {

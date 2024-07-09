@@ -301,6 +301,7 @@ rb_header_constructed (GObject *object)
 	/* set up position slider */
 	header->priv->adjustment = GTK_ADJUSTMENT (gtk_adjustment_new (0.0, 0.0, 10.0, 1.0, 10.0, 0.0));
 	header->priv->scale = gtk_scale_new (GTK_ORIENTATION_HORIZONTAL, header->priv->adjustment);
+	gtk_widget_set_no_show_all (header->priv->scale, TRUE);
 	gtk_range_set_fill_level (GTK_RANGE (header->priv->scale), 0.0);
 	gtk_range_set_show_fill_level (GTK_RANGE (header->priv->scale), FALSE);
 	gtk_range_set_restrict_to_fill_level (GTK_RANGE (header->priv->scale), FALSE);
@@ -381,10 +382,13 @@ rb_header_constructed (GObject *object)
 
 	/* elapsed time / duration display */
 	header->priv->timelabel = gtk_label_new ("");
+	gtk_label_set_attributes (GTK_LABEL (header->priv->timelabel),
+				  rb_text_numeric_get_pango_attr_list ());
 	gtk_widget_set_halign (header->priv->timelabel, GTK_ALIGN_END);
 	gtk_widget_set_no_show_all (header->priv->timelabel, TRUE);
 
 	header->priv->timebutton = gtk_button_new ();
+	gtk_widget_set_valign (header->priv->timebutton, GTK_ALIGN_CENTER);
 	gtk_button_set_relief (GTK_BUTTON (header->priv->timebutton), GTK_RELIEF_NONE);
 	gtk_container_add (GTK_CONTAINER (header->priv->timebutton), header->priv->timelabel);
 	g_signal_connect_object (header->priv->timebutton,
@@ -417,6 +421,7 @@ rb_header_constructed (GObject *object)
 
 	/* volume button */
 	header->priv->volume_button = gtk_volume_button_new ();
+	gtk_widget_set_valign (header->priv->volume_button, GTK_ALIGN_CENTER);
 	g_signal_connect (header->priv->volume_button, "value-changed",
 			  G_CALLBACK (volume_widget_changed_cb),
 			  header);
@@ -1037,7 +1042,7 @@ slider_press_callback (GtkWidget *widget,
 
 	/* hack: pretend the trough is at least 20 pixels high */
 	height = gtk_widget_get_allocated_height (widget);
-	if (abs (event->y - (height / 2)) < 10)
+	if (fabs (event->y - (height / 2)) < 10)
 		event->y = height / 2;
 
 	return FALSE;

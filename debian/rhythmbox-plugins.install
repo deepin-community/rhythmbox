@@ -20,7 +20,6 @@ usr/lib/*/rhythmbox/plugins/lyrics
 usr/share/rhythmbox/plugins/lyrics
 usr/lib/*/rhythmbox/plugins/magnatune
 usr/share/rhythmbox/plugins/magnatune
-usr/lib/*/rhythmbox/plugins/mmkeys
 usr/lib/*/rhythmbox/plugins/mpris
 [linux-any] usr/lib/*/rhythmbox/plugins/mtpdevice
 usr/lib/*/rhythmbox/plugins/notification
@@ -31,7 +30,5 @@ usr/lib/*/rhythmbox/plugins/rblirc
 usr/share/rhythmbox/plugins/rblirc
 usr/lib/*/rhythmbox/plugins/replaygain
 usr/share/rhythmbox/plugins/replaygain
-usr/lib/*/rhythmbox/plugins/soundcloud
-usr/share/rhythmbox/plugins/soundcloud
 usr/lib/*/rhythmbox/plugins/webremote
 usr/share/rhythmbox/plugins/webremote

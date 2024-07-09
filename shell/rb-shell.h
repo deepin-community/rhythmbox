@@ -101,6 +101,8 @@ struct _RBShellClass
 	void     (*database_load_complete) (RBShell *shell);
 };
 
+G_DEFINE_AUTOPTR_CLEANUP_FUNC(RBShell, g_object_unref)
+
 GType		rb_shell_get_type	(void);
 
 gboolean        rb_shell_present        (RBShell *shell, guint32 timestamp, GError **error);
@@ -155,8 +157,6 @@ void            rb_shell_register_entry_type_for_source (RBShell *shell,
 							 RhythmDBEntryType *type);
 RBSource * rb_shell_get_source_by_entry_type (RBShell *shell,
 					      RhythmDBEntryType *type);
-
-gboolean        rb_shell_get_party_mode (RBShell *shell);
 
 void 		rb_shell_append_display_page (RBShell *shell, RBDisplayPage *page, RBDisplayPage *parent);
 

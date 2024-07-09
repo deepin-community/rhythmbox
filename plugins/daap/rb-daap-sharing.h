@@ -30,6 +30,8 @@
 #ifndef __DAAP_SHARING_H
 #define __DAAP_SHARING_H
 
+#include <libdmapsharing/dmap.h>
+
 #include "rb-shell.h"
 
 G_BEGIN_DECLS

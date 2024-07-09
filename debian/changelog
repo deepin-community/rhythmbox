@@ -1,8 +1,60 @@
-rhythmbox (3.4.4-deepin1) unstable; urgency=medium
+rhythmbox (3.4.7-2) unstable; urgency=medium
 
-  * Rebuild
+  * Cherry-pick 3 patches to fix issues with libxml2 2.12 and Python 3.12
+  * Stop using debian/control.in and dh_gnome_clean
+  * Update Build-Depends: liblircclient-dev -> liblirc-dev (Closes: #1059977)
+  * Update standards version to 4.6.2, no changes needed
 
- -- Deepin Packages Builder <packages@deepin.org>  Fri, 11 Nov 2022 18:04:06 +0800
+ -- Jeremy Bícha <jbicha@ubuntu.com>  Thu, 04 Jan 2024 10:03:32 -0500
+
+rhythmbox (3.4.7-1) unstable; urgency=medium
+
+  * New upstream release
+  * Build with libsoup3
+  * Drop unused Build-Depends on gir1.2-webkit2-4.0
+  * debian/librhythmbox-core10.symbols: Drop get_party_mode symbol.
+    Party Mode no longer exists and nothing in Debian used this
+    (Closes: #378516, #611202)
+  * Drop build test patch applied in new release
+
+ -- Jeremy Bícha <jbicha@ubuntu.com>  Tue, 13 Jun 2023 10:28:51 -0400
+
+rhythmbox (3.4.6-2) unstable; urgency=medium
+
+  * Increase test timeout
+  * Add patch to temporarily skip a build test failing on arm64
+
+ -- Jeremy Bicha <jbicha@ubuntu.com>  Thu, 23 Jun 2022 10:13:54 -0400
+
+rhythmbox (3.4.6-1) unstable; urgency=medium
+
+  * New upstream release (Closes: #1012266)
+  * Build with meson
+  * debian/librhythmbox-core10.symbols: Update
+  * debian/control.in: Build-Depend on desktop-file-utils
+  * Build-Depend on check, librsvg2-common, xauth, and xvfb for build tests
+  * debian/control.in: Don't recommend gstreamer1.0-pulseaudio
+  * debian/rhythmbox.install: AppStream metadata file has new name
+  * debian/rhythmbox-plugins.install: SoundCloud plugin is no longer provided
+  * Drop all patches except the multiarch patch: applied in new release
+  * Add proposed patch for build tests to use uninstalled gsettings schemas
+  * Bump Standards-Version to 4.6.1
+  * Drop obsolete Build-Conflicts
+  * Set Rules-Requires-Root: no
+
+ -- Jeremy Bicha <jbicha@ubuntu.com>  Wed, 22 Jun 2022 10:45:33 -0400
+
+rhythmbox (3.4.4-5) unstable; urgency=medium
+
+  * Cherry-pick patch to remove obsolete GNOME MediaKeys plugin
+  * Cherry-pick patch to make the replacement MPRIS plugin built-in
+    so it can't be disabled
+  * debian/rhythmbox-plugins.install: Don't try to install the MediaKeys plugin
+  * Bump debhelper-compat to 13
+  * Build-Depend on dh-sequence-gir, dh-sequence-gnome, dh-sequence-python3
+  * debian/rules: Drop unneeded -Wl,--as-needed
+
+ -- Jeremy Bicha <jeremy.bicha@canonical.com>  Thu, 10 Feb 2022 11:07:22 -0500
 
 rhythmbox (3.4.4-4) unstable; urgency=medium
 

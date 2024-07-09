@@ -205,7 +205,7 @@ about_action_cb (GSimpleAction *action, GVariant *parameters, gpointer user_data
 			       "authors", (const char **) authors,
 			       "documenters", (const char **) documenters,
 			       "translator-credits", strcmp (translator_credits, "translator-credits") != 0 ? translator_credits : NULL,
-			       "logo-icon-name", "rhythmbox",
+			       "logo-icon-name", RB_APP_ICON,
 			       NULL);
 	g_string_free (comment, TRUE);
 	g_free (license_trans);
@@ -464,12 +464,7 @@ rb_application_init (RBApplication *app)
 	rb_user_data_dir ();
 	rb_refstring_system_init ();
 
-#ifdef USE_UNINSTALLED_DIRS
-	rb_file_helpers_init (TRUE);
-#else
-	rb_file_helpers_init (FALSE);
-#endif
-
+	rb_file_helpers_init ();
 	app->priv->shared_menus = g_hash_table_new_full (g_str_hash,
 							 g_str_equal,
 							 (GDestroyNotify) g_free,
@@ -901,13 +896,18 @@ rb_application_activate_key (RBApplication *app, GdkEventKey *event)
 	GList *l;
 	GtkWidget *window;
 	gboolean ret = FALSE;
+	guint event_keyval;
+	GdkModifierType event_mods;
 
 	g_object_get (app->priv->shell, "window", &window, NULL);
 
+	event_keyval = gdk_keyval_to_lower (event->keyval);
+	event_mods = (gtk_accelerator_get_default_mod_mask () & event->state);
+
 	for (l = app->priv->accelerators; l != NULL; l = l->next) {
 		RBApplicationAccel *accel = l->data;
-		if (accel->keyval == event->keyval &&
-		    accel->mods == event->state) {
+		if (accel->keyval == event_keyval &&
+		    accel->mods == event_mods) {
 			GActionGroup *group;
 
 			group = gtk_widget_get_action_group (window, accel->prefix);

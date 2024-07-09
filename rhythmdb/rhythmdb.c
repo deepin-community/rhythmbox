@@ -131,6 +131,7 @@ static const RhythmDBPropertyDef rhythmdb_properties[] = {
 	PROP_ENTRY(COPYRIGHT, G_TYPE_STRING, "copyright"),
 	PROP_ENTRY(IMAGE, G_TYPE_STRING, "image"),
 	PROP_ENTRY(POST_TIME, G_TYPE_ULONG, "post-time"),
+	PROP_ENTRY(PODCAST_GUID, G_TYPE_STRING, "podcast-guid"),
 
 	PROP_ENTRY(MUSICBRAINZ_TRACKID, G_TYPE_STRING, "mb-trackid"),
 	PROP_ENTRY(MUSICBRAINZ_ARTISTID, G_TYPE_STRING, "mb-artistid"),
@@ -1001,6 +1002,8 @@ rhythmdb_event_free (RhythmDB *db,
 	case RHYTHMDB_EVENT_METADATA_CACHE:
 		free_cached_metadata(&result->cached_metadata);
 		break;
+	case RHYTHMDB_EVENT_BARRIER:
+		break;
 	}
 	if (result->error)
 		g_error_free (result->error);
@@ -1052,6 +1055,8 @@ rhythmdb_shutdown (RhythmDB *db)
 	g_list_free (db->priv->outstanding_stats);
 	db->priv->outstanding_stats = NULL;
 	g_mutex_unlock (&db->priv->stat_mutex);
+
+	g_clear_handle_id (&db->priv->sync_library_id, g_source_remove);
 
 	rb_debug ("%d outstanding threads", g_atomic_int_get (&db->priv->outstanding_threads));
 	while (g_atomic_int_get (&db->priv->outstanding_threads) > 0) {
@@ -1547,6 +1552,28 @@ rhythmdb_commit_internal (RhythmDB *db,
 			  gboolean sync_changes,
 			  GThread *thread)
 {
+	/*
+	 * during normal operation, if committing from a worker thread,
+	 * wait for changes made on the thread to be processed by the main thread.
+	 * this avoids races and ensures the signals emitted are correct.
+	 */
+	if (db->priv->action_thread_running && !rb_is_main_thread ()) {
+		RhythmDBEvent *event;
+
+		event = g_slice_new0 (RhythmDBEvent);
+		event->db = db;
+		event->type = RHYTHMDB_EVENT_BARRIER;
+
+		g_mutex_lock (&db->priv->barrier_mutex);
+		rhythmdb_push_event (db, event);
+		while (g_list_find (db->priv->barriers_done, event) == NULL)
+			g_cond_wait (&db->priv->barrier_condition, &db->priv->barrier_mutex);
+		db->priv->barriers_done = g_list_remove (db->priv->barriers_done, event);
+		g_mutex_unlock (&db->priv->barrier_mutex);
+
+		rhythmdb_event_free (db, event);
+	}
+
 	g_mutex_lock (&db->priv->change_mutex);
 
 	if (sync_changes) {
@@ -2626,7 +2653,8 @@ rhythmdb_process_one_event (RhythmDBEvent *event, RhythmDB *db)
 	    ((event->type == RHYTHMDB_EVENT_STAT)
 	     || (event->type == RHYTHMDB_EVENT_METADATA_LOAD)
 	     || (event->type == RHYTHMDB_EVENT_METADATA_CACHE)
-	     || (event->type == RHYTHMDB_EVENT_ENTRY_SET))) {
+	     || (event->type == RHYTHMDB_EVENT_ENTRY_SET)
+	     || (event->type == RHYTHMDB_EVENT_BARRIER))) {
 		rb_debug ("Database is read-only, delaying event processing");
 		g_async_queue_push (db->priv->delayed_write_queue, event);
 		return;
@@ -2673,6 +2701,16 @@ rhythmdb_process_one_event (RhythmDBEvent *event, RhythmDB *db)
 	case RHYTHMDB_EVENT_QUERY_COMPLETE:
 		rb_debug ("processing RHYTHMDB_EVENT_QUERY_COMPLETE");
 		rhythmdb_read_leave (db);
+		break;
+	case RHYTHMDB_EVENT_BARRIER:
+		rb_debug ("processing RHYTHMDB_EVENT_BARRIER");
+		g_mutex_lock (&db->priv->barrier_mutex);
+		db->priv->barriers_done = g_list_prepend (db->priv->barriers_done, event);
+		g_cond_broadcast (&db->priv->barrier_condition);
+		g_mutex_unlock (&db->priv->barrier_mutex);
+
+		/* freed by the thread waiting on the barrier */
+		free = FALSE;
 		break;
 	}
 	if (free)
@@ -3218,7 +3256,7 @@ static gboolean
 rhythmdb_sync_library_idle (RhythmDB *db)
 {
 	rhythmdb_sync_library_location (db);
-	g_object_unref (db);
+	db->priv->sync_library_id = 0;
 	return FALSE;
 }
 
@@ -3256,8 +3294,7 @@ rhythmdb_load_thread_main (RhythmDB *db)
 	rb_list_deep_free (db->priv->active_mounts);
 	db->priv->active_mounts = NULL;
 
-	g_object_ref (db);
-	g_timeout_add_seconds (10, (GSourceFunc) rhythmdb_sync_library_idle, db);
+	db->priv->sync_library_id = g_timeout_add_seconds (10, (GSourceFunc) rhythmdb_sync_library_idle, db);
 
 	rb_debug ("queuing db load complete signal");
 	result = g_slice_new0 (RhythmDBEvent);
@@ -3743,9 +3780,7 @@ rhythmdb_entry_set_internal (RhythmDB *db,
 			podcast->subtitle = rb_refstring_new (g_value_get_string (value));
 			break;
 		case RHYTHMDB_PROP_SUMMARY:
-			g_assert (podcast);
-			rb_refstring_unref (podcast->summary);
-			podcast->summary = rb_refstring_new (g_value_get_string (value));
+			g_assert_not_reached ();
 			break;
 		case RHYTHMDB_PROP_LANG:
 			g_assert (podcast);
@@ -3771,6 +3806,12 @@ rhythmdb_entry_set_internal (RhythmDB *db,
 		case RHYTHMDB_PROP_POST_TIME:
 			g_assert (podcast);
 			podcast->post_time = g_value_get_ulong (value);
+			break;
+		case RHYTHMDB_PROP_PODCAST_GUID:
+			g_assert (podcast);
+			if (podcast->guid != NULL)
+				rb_refstring_unref (podcast->guid);
+			podcast->guid = rb_refstring_new (g_value_get_string (value));
 			break;
 		case RHYTHMDB_NUM_PROPERTIES:
 			g_assert_not_reached ();
@@ -5023,10 +5064,7 @@ rhythmdb_entry_get_string (RhythmDBEntry *entry,
 		else
 			return NULL;
 	case RHYTHMDB_PROP_SUMMARY:
-		if (podcast)
-			return rb_refstring_get (podcast->summary);
-		else
-			return NULL;
+		return NULL;
 	case RHYTHMDB_PROP_LANG:
 		if (podcast)
 			return rb_refstring_get (podcast->lang);
@@ -5040,6 +5078,11 @@ rhythmdb_entry_get_string (RhythmDBEntry *entry,
 	case RHYTHMDB_PROP_IMAGE:
 		if (podcast)
 			return rb_refstring_get (podcast->image);
+		else
+			return NULL;
+	case RHYTHMDB_PROP_PODCAST_GUID:
+		if (podcast)
+			return rb_refstring_get (podcast->guid);
 		else
 			return NULL;
 

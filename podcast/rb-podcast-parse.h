@@ -29,6 +29,7 @@
 #define RB_PODCAST_PARSE_H
 
 #include <glib.h>
+#include <gio/gio.h>
 
 typedef enum
 {
@@ -37,6 +38,13 @@ typedef enum
 	RB_PODCAST_PARSE_ERROR_XML_PARSE,		/* error parsing podcast xml */
 	RB_PODCAST_PARSE_ERROR_NO_ITEMS,		/* feed doesn't contain any downloadable items */
 } RBPodcastParseError;
+
+typedef enum
+{
+	RB_PODCAST_PARSE_STATUS_UNPARSED,		/* feed unparsed */
+	RB_PODCAST_PARSE_STATUS_SUCCESS,		/* feed parse succeeded */
+	RB_PODCAST_PARSE_STATUS_ERROR,			/* feed parse failed */
+} RBPodcastParseStatus;
 
 #define RB_PODCAST_PARSE_ERROR rb_podcast_parse_error_quark ()
 GQuark rb_podcast_parse_error_quark (void);
@@ -47,13 +55,16 @@ typedef struct
 	char* url;
 	char* description;
 	char* author;
+	char* guid;
 	guint64 pub_date;
-	gulong duration;
+	gint64 duration;
 	guint64 filesize;
 } RBPodcastItem;
 
 typedef struct
 {
+	int refcount;
+
 	char* url;
 	char* title;
 	char* lang;
@@ -68,6 +79,7 @@ typedef struct
 
 	GList *posts;
 	int num_posts;
+	RBPodcastParseStatus status;
 } RBPodcastChannel;
 
 GType	rb_podcast_channel_get_type (void);
@@ -75,14 +87,18 @@ GType	rb_podcast_item_get_type (void);
 #define RB_TYPE_PODCAST_CHANNEL	(rb_podcast_channel_get_type ())
 #define RB_TYPE_PODCAST_ITEM (rb_podcast_item_get_type ())
 
-gboolean rb_podcast_parse_load_feed	(RBPodcastChannel *data,
-					 const char *url,
-					 gboolean existing_feed,
-					 GError **error);
+typedef void (*RBPodcastParseCallback) (RBPodcastChannel *data, GError *error, gpointer user_data);
 
+void	rb_podcast_parse_load_feed (RBPodcastChannel *data,
+				    GCancellable *cancellable,
+				    RBPodcastParseCallback callback,
+				    gpointer user_data);
+
+RBPodcastChannel *rb_podcast_parse_channel_new (void);
 RBPodcastChannel *rb_podcast_parse_channel_copy (RBPodcastChannel *data);
 RBPodcastItem *rb_podcast_parse_item_copy (RBPodcastItem *data);
-void rb_podcast_parse_channel_free 	(RBPodcastChannel *data);
+RBPodcastChannel *rb_podcast_parse_channel_ref	(RBPodcastChannel *data);
+void rb_podcast_parse_channel_unref 	(RBPodcastChannel *data);
 void rb_podcast_parse_item_free 	(RBPodcastItem *data);
 
 #endif /* RB_PODCAST_PARSE_H */
