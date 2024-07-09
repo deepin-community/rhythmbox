@@ -7,10 +7,10 @@ Subject: Load plugins from non-multiarch directory also
  1 file changed, 3 insertions(+)
 
 diff --git a/shell/rb-shell.c b/shell/rb-shell.c
-index 24e68f4..d54a107 100644
+index 824557b..2d196c3 100644
 --- a/shell/rb-shell.c
 +++ b/shell/rb-shell.c
-@@ -885,6 +885,9 @@ construct_plugins (RBShell *shell)
+@@ -860,6 +860,9 @@ construct_plugins (RBShell *shell)
  	peas_engine_add_search_path (shell->priv->plugin_engine,
  				     plugindir,
  				     plugindatadir);

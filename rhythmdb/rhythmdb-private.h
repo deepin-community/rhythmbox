@@ -41,15 +41,11 @@ typedef struct {
 	/* podcast */
 	RBRefString *description;
 	RBRefString *subtitle;
-	RBRefString *summary;
 	RBRefString *lang;
 	RBRefString *copyright;
 	RBRefString *image;
-	gulong status;	/* 0-99: downloading
-			   100: Complete
-			   101: Error
-			   102: wait
-			   103: pause */
+	RBRefString *guid;
+	gulong status;
 	gulong post_time;
 } RhythmDBPodcastFields;
 
@@ -175,11 +171,16 @@ struct _RhythmDBPrivate
 	guint event_queue_watch_id;
 	guint commit_timeout_id;
 	guint save_timeout_id;
+	guint sync_library_id;
 
 	guint emit_entry_signals_id;
 	GList *added_entries_to_emit;
 	GList *deleted_entries_to_emit;
 	GHashTable *changed_entries_to_emit;
+
+	GList *barriers_done;
+	GMutex barrier_mutex;
+	GCond barrier_condition;
 
 	gboolean can_save;
 	gboolean saving;
@@ -206,7 +207,8 @@ typedef struct
 		RHYTHMDB_EVENT_THREAD_EXITED,
 		RHYTHMDB_EVENT_DB_SAVED,
 		RHYTHMDB_EVENT_QUERY_COMPLETE,
-		RHYTHMDB_EVENT_ENTRY_SET
+		RHYTHMDB_EVENT_ENTRY_SET,
+		RHYTHMDB_EVENT_BARRIER
 	} type;
 	RBRefString *uri;
 	RBRefString *real_uri; /* Target of a symlink, if any */

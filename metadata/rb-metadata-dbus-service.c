@@ -33,6 +33,7 @@
 #include <time.h>
 #include <string.h>
 #include <unistd.h>
+#include <locale.h>
 
 #include <glib/gi18n.h>
 #include <gst/gst.h>
@@ -254,7 +255,7 @@ new_connection_cb (GDBusServer *server,
 }
 
 static int
-test_saveable_types ()
+test_saveable_types (void)
 {
 	RBMetaData *md;
 	char **saveable;
@@ -357,12 +358,13 @@ main (int argc, char **argv)
 	const char *address = NULL;
 	char *guid;
 
-#ifdef ENABLE_NLS
+	setlocale (LC_ALL, "");
+
 	/* initialize i18n */
 	bindtextdomain (GETTEXT_PACKAGE, GNOMELOCALEDIR);
 	bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
 	textdomain (GETTEXT_PACKAGE);
-#endif
+
 	gst_init (NULL, NULL);
 	g_set_prgname ("rhythmbox-metadata");
 

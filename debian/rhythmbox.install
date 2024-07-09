@@ -2,4 +2,4 @@ usr/bin
 usr/libexec/rhythmbox-metadata
 usr/share/applications/
 usr/share/man
-usr/share/metainfo/rhythmbox.appdata.xml
+usr/share/metainfo

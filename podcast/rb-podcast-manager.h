@@ -36,6 +36,20 @@
 
 G_BEGIN_DECLS
 
+typedef enum {
+	RB_PODCAST_FEED_UPDATE_STARTED = 0,
+	RB_PODCAST_FEED_UPDATE_ERROR,
+	RB_PODCAST_FEED_UPDATE_ERROR_BG,
+	RB_PODCAST_FEED_UPDATE_CONFLICT,
+	RB_PODCAST_FEED_UPDATE_CANCELLED,
+	RB_PODCAST_FEED_UPDATE_SUBSCRIBED,
+	RB_PODCAST_FEED_UPDATE_UNCHANGED,
+	RB_PODCAST_FEED_UPDATE_UPDATED
+} RBPodcastFeedUpdateStatus;
+
+GType			rb_podcast_feed_update_status_get_type (void);
+#define RB_TYPE_PODCAST_FEED_UPDATE_STATUS (rb_podcast_feed_update_status_get_type())
+
 #define RB_TYPE_PODCAST_MANAGER            (rb_podcast_manager_get_type ())
 #define RB_PODCAST_MANAGER(o)              (G_TYPE_CHECK_INSTANCE_CAST ((o), RB_TYPE_PODCAST_MANAGER, RBPodcastManager))
 #define RB_PODCAST_MANAGER_CLASS(k)        (G_TYPE_CHECK_CLASS_CAST((k), RB_TYPE_PODCAST_MANAGER, RBPodcastManagerClass))
@@ -55,19 +69,12 @@ typedef struct
 typedef struct
 {
 	GObjectClass parent_class;
-
-	/* signals */
-	void        (*start_download)    		(RBPodcastManager* pd, RhythmDBEntry *entry);
-	void        (*finish_download)   		(RBPodcastManager* pd, RhythmDBEntry *entry);
-	void        (*feed_updates_available)   	(RBPodcastManager* pd, RhythmDBEntry *entry);
-	void        (*process_error)	   		(RBPodcastManager* pd, const char *url, const char *error, gboolean existing);
-
 } RBPodcastManagerClass;
 
 GType                   rb_podcast_manager_get_type    		(void);
 RBPodcastManager*      	rb_podcast_manager_new         		(RhythmDB *db);
 void                    rb_podcast_manager_download_entry  	(RBPodcastManager *pd, RhythmDBEntry *entry);
-void		        rb_podcast_manager_cancel_download	(RBPodcastManager *pd, RhythmDBEntry *entry);
+gboolean	        rb_podcast_manager_cancel_download	(RBPodcastManager *pd, RhythmDBEntry *entry);
 void 			rb_podcast_manager_update_feeds 	(RBPodcastManager *pd);
 void                    rb_podcast_manager_start_sync  		(RBPodcastManager *pd);
 void			rb_podcast_manager_delete_download	(RBPodcastManager *pd, RhythmDBEntry *entry);
@@ -79,18 +86,22 @@ gchar *                 rb_podcast_manager_get_podcast_dir	(RBPodcastManager *pd
 gboolean                rb_podcast_manager_subscribe_feed    	(RBPodcastManager *pd, const gchar* url, gboolean automatic);
 void			rb_podcast_manager_add_parsed_feed	(RBPodcastManager *pd, RBPodcastChannel *feed);
 void			rb_podcast_manager_insert_feed_url	(RBPodcastManager *pd, const char *url);
-void            	rb_podcast_manager_unsubscribe_feed    	(RhythmDB *db, const gchar* url);
+gboolean		rb_podcast_manager_feed_updating	(RBPodcastManager *pd, const char *url);
+
 void			rb_podcast_manager_shutdown 		(RBPodcastManager *pd);
 RhythmDBEntry *         rb_podcast_manager_add_post  	  	(RhythmDB *db,
 								 gboolean search_result,
+								 RhythmDBEntry *entry,
                                			         	 const char *name,
 	                                                 	 const char *title,
 	                                                 	 const char *subtitle,
 	                                                 	 const char *generator,
 	                                                 	 const char *uri,
 		        	                               	 const char *description,
+								 const char *guid,
 	        	                                       	 gulong date,
-								 gulong duration,
+								 gint64 duration,
+								 gulong position,
 								 guint64 filesize);
 
 gboolean		rb_podcast_manager_entry_downloaded	(RhythmDBEntry *entry);

@@ -510,6 +510,7 @@ librhythmbox-core.so.10 librhythmbox-core10 #MINVER#
  rb_podcast_add_dialog_reset@Base 3.0
  rb_podcast_channel_get_type@Base 3.0
  rb_podcast_feed_entry_type_get_type@Base 3.0
+ rb_podcast_feed_update_status_get_type@Base 3.4.5
  rb_podcast_get_feed_entry_type@Base 3.0
  rb_podcast_get_post_entry_type@Base 3.0
  rb_podcast_get_search_entry_type@Base 3.0
@@ -525,6 +526,7 @@ librhythmbox-core.so.10 librhythmbox-core10 #MINVER#
  rb_podcast_manager_download_entry@Base 3.0
  rb_podcast_manager_entry_downloaded@Base 3.0
  rb_podcast_manager_entry_in_download_queue@Base 3.0
+ rb_podcast_manager_feed_updating@Base 3.4.5
  rb_podcast_manager_get_podcast_dir@Base 3.0
  rb_podcast_manager_get_searches@Base 3.0
  rb_podcast_manager_get_type@Base 3.0
@@ -533,10 +535,11 @@ librhythmbox-core.so.10 librhythmbox-core10 #MINVER#
  rb_podcast_manager_remove_feed@Base 3.0
  rb_podcast_manager_shutdown@Base 3.0
  rb_podcast_manager_subscribe_feed@Base 3.0
- rb_podcast_manager_unsubscribe_feed@Base 3.0
  rb_podcast_manager_update_feeds@Base 3.0
  rb_podcast_parse_channel_copy@Base 3.0
- rb_podcast_parse_channel_free@Base 3.0
+ rb_podcast_parse_channel_new@Base 3.4.5
+ rb_podcast_parse_channel_ref@Base 3.4.5
+ rb_podcast_parse_channel_unref@Base 3.4.5
  rb_podcast_parse_error_quark@Base 3.0
  rb_podcast_parse_item_copy@Base 3.0
  rb_podcast_parse_item_free@Base 3.0
@@ -648,7 +651,6 @@ librhythmbox-core.so.10 librhythmbox-core10 #MINVER#
  rb_shell_do_notify@Base 3.0
  rb_shell_error_get_type@Base 3.0
  rb_shell_error_quark@Base 3.0
- rb_shell_get_party_mode@Base 3.0
  rb_shell_get_song_properties@Base 3.0
  rb_shell_get_source_by_entry_type@Base 3.0
  rb_shell_get_type@Base 3.0
@@ -830,6 +832,7 @@ librhythmbox-core.so.10 librhythmbox-core10 #MINVER#
  rb_text_cat@Base 3.0
  rb_text_common_direction@Base 3.0
  rb_text_direction_conflict@Base 3.0
+ rb_text_numeric_get_pango_attr_list@Base 3.4.5
  rb_threads_init@Base 3.0
  rb_track_transfer_batch_add@Base 3.0
  rb_track_transfer_batch_cancel@Base 3.0
@@ -850,6 +853,8 @@ librhythmbox-core.so.10 librhythmbox-core10 #MINVER#
  rb_transfer_target_should_transfer@Base 3.0
  rb_transfer_target_track_add_error@Base 3.0
  rb_transfer_target_track_added@Base 3.0
+ rb_transfer_target_track_prepare@Base 3.4.5
+ rb_transfer_target_track_upload@Base 3.4.5
  rb_transfer_target_transfer@Base 3.0
  rb_tree_dnd_add_drag_dest_support@Base 3.0
  rb_tree_dnd_add_drag_source_support@Base 3.0
@@ -875,6 +880,7 @@ librhythmbox-core.so.10 librhythmbox-core10 #MINVER#
  rb_uri_get_short_path_name@Base 3.0
  rb_uri_handle_recursively@Base 3.0
  rb_uri_handle_recursively_async@Base 3.0
+ rb_uri_is_descendant@Base 3.4.5
  rb_uri_is_directory@Base 3.0
  rb_uri_is_hidden@Base 3.0
  rb_uri_is_local@Base 3.0
@@ -892,7 +898,6 @@ librhythmbox-core.so.10 librhythmbox-core10 #MINVER#
  rb_xfade_stream_get_type@Base 3.0
  relative_time_criteria_options@Base 3.0
  relative_time_property_type@Base 3.0
- rhythmbox_get_resource@Base 3.4
  rhythmdb_add_uri@Base 3.0
  rhythmdb_add_uri_with_types@Base 3.0
  rhythmdb_commit@Base 3.0
@@ -983,6 +988,7 @@ librhythmbox-core.so.10 librhythmbox-core10 #MINVER#
  rhythmdb_import_job_get_processed@Base 3.0
  rhythmdb_import_job_get_total@Base 3.0
  rhythmdb_import_job_get_type@Base 3.0
+ rhythmdb_import_job_includes_uri@Base 3.4.5
  rhythmdb_import_job_new@Base 3.0
  rhythmdb_import_job_scan_complete@Base 3.0
  rhythmdb_import_job_start@Base 3.0

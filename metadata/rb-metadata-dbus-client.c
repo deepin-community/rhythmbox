@@ -183,7 +183,7 @@ ping_metadata_service (GError **error)
 						  "ping");
 	response = g_dbus_connection_send_message_with_reply_sync (dbus_connection,
 								   message,
-								   G_DBUS_MESSAGE_FLAGS_NONE,
+								   G_DBUS_SEND_MESSAGE_FLAGS_NONE,
 								   RB_METADATA_DBUS_TIMEOUT,
 								   NULL,
 								   NULL,
@@ -241,16 +241,7 @@ start_metadata_service (GError **error)
 		int i;
 
 		argv = g_ptr_array_new ();
-		/*
-		 * Normally, we find the metadata helper in the libexec dir,
-		 * but when --enable-uninstalled-build is specified, we look
-		 * in the directory it's built in.
-		 */
-#ifdef USE_UNINSTALLED_DIRS
-		g_ptr_array_add (argv, METADATA_UNINSTALLED_DIR "/rhythmbox-metadata");
-#else
 		g_ptr_array_add (argv, LIBEXEC_DIR G_DIR_SEPARATOR_S INSTALLED_METADATA_HELPER);
-#endif
 		debug_args = rb_debug_get_args ();
 		i = 0;
 		while (debug_args[i] != NULL) {

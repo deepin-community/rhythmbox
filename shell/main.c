@@ -45,6 +45,7 @@
 #include "rb-util.h"
 #include "rb-debug.h"
 #include "rb-application.h"
+#include "rb-stock-icons.h"
 
 int
 main (int argc, char **argv)
@@ -61,26 +62,16 @@ main (int argc, char **argv)
 
 	g_random_set_seed (time (0));
 
-#ifdef USE_UNINSTALLED_DIRS
-	g_setenv ("GSETTINGS_SCHEMA_DIR", SHARE_UNINSTALLED_BUILDDIR, TRUE);
-#endif
+	setlocale (LC_ALL, "");
 
-	setlocale (LC_ALL, NULL);
-
-#ifdef ENABLE_NLS
 	/* initialize i18n */
 	bindtextdomain (GETTEXT_PACKAGE, GNOMELOCALEDIR);
 	bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
 
 	textdomain (GETTEXT_PACKAGE);
-#endif
 
 	g_set_application_name (_("Rhythmbox"));
-	gtk_window_set_default_icon_name ("rhythmbox");
-
-#if defined(USE_UNINSTALLED_DIRS)
-	g_irepository_prepend_search_path (SHARE_UNINSTALLED_BUILDDIR "/../bindings/gi");
-#endif
+	gtk_window_set_default_icon_name (RB_APP_ICON);
 
 	rb_threads_init ();
 

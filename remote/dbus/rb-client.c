@@ -138,6 +138,8 @@ static GOptionEntry args[] = {
 	{ NULL }
 };
 
+#if defined(HAVE_CFMAKERAW)
+
 typedef struct {
 	GApplication *app;
 	GDBusProxy *mpris_player;
@@ -176,6 +178,7 @@ struct {
 	/* quit rhythmbox? */
 };
 
+#endif
 
 static gboolean
 annoy (GError **error)
@@ -633,6 +636,8 @@ rate_song (GDBusProxy *mpris, gdouble song_rating)
 	g_hash_table_destroy (properties);
 }
 
+#if defined(HAVE_CFMAKERAW)
+
 static void
 interact_quit (InteractData *data, int ch)
 {
@@ -857,7 +862,7 @@ interact_mpris_player_signal (GDBusProxy *proxy, char *sender, char *signal_name
 		gint64 pos;
 		char *str;
 		g_variant_get (parameters, "(x)", &pos);
-		if (abs(pos - data->position) >= G_USEC_PER_SEC) {
+		if (llabs(pos - data->position) >= G_USEC_PER_SEC) {
 			str = rb_make_duration_string (pos, FALSE);
 			g_print (_("Seeked to %s"), str);
 			g_print ("\r\n");
@@ -971,6 +976,7 @@ interact (InteractData *data)
 	tcsetattr(0, TCSAFLUSH, &orig_tt);
 }
 
+#endif /* HAVE_CFMAKERAW */
 
 static void
 check_loaded_state (GVariant *state)
@@ -1027,12 +1033,11 @@ main (int argc, char **argv)
 	gboolean scanned;
 	GVariant *state;
 
-#ifdef ENABLE_NLS
 	/* initialize i18n */
 	bindtextdomain (GETTEXT_PACKAGE, GNOMELOCALEDIR);
 	bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
 	textdomain (GETTEXT_PACKAGE);
-#endif
+
 	/* setup */
 	setlocale (LC_ALL, "");
 	g_set_prgname ("rhythmbox-client");
@@ -1144,6 +1149,7 @@ main (int argc, char **argv)
 
 	/* interactive mode takes precedence over anything else */
 	if (interactive) {
+#if defined(HAVE_CFMAKERAW)
 		InteractData data;
 		rb_debug ("entering interactive mode");
 		if (!isatty(1)) {
@@ -1159,12 +1165,17 @@ main (int argc, char **argv)
 
 		interact (&data);
 		exit (0);
+#else
+		g_warning ("interactive mode not available on this system");
+		exit (1);
+#endif
 	}
 
 	/* activate or quit */
 	if (quit) {
 		rb_debug ("quitting existing instance");
 		g_action_group_activate_action (G_ACTION_GROUP (app), "quit", NULL);
+		g_dbus_connection_flush_sync (bus, NULL, NULL);
 		exit (0);
 	}
 

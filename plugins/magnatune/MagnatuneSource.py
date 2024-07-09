@@ -48,7 +48,7 @@ magnatune_partner_id = "rhythmbox"
 # URIs
 magnatune_song_info_uri = "http://magnatune.com/info/song_info_xml.zip"
 magnatune_changed_uri = "http://magnatune.com/info/changed.txt"
-magnatune_buy_album_uri = "https://magnatune.com/buy/choose?"
+magnatune_member_signup_uri = "http://magnatune.com/member/signup?"
 magnatune_api_download_uri = "http://%s:%s@download.magnatune.com/buy/membership_free_dl_xml?"
 
 magnatune_in_progress_dir = Gio.file_new_for_path(RB.user_data_dir()).resolve_relative_path('magnatune')
@@ -172,15 +172,13 @@ class MagnatuneSource(RB.BrowserSource):
 		if len(tracks) == 0:
 			return
 
-		tr = tracks[0]
-		sku = self.__sku_dict[tr.get_string(RB.RhythmDBPropType.LOCATION)]
-		url = magnatune_buy_album_uri + urllib.parse.urlencode({ 'sku': sku, 'ref': magnatune_partner_id })
+		url = magnatune_member_signup_uri + urllib.parse.urlencode({ 'ref': magnatune_partner_id })
 		Gtk.show_uri(screen, url, Gdk.CURRENT_TIME)
 
 
 	def download_album(self):
 		if self.__settings['account-type'] != 'download':
-			# The user doesn't have a download account, so redirect them to the download signup page
+			# The user doesn't have a download account, so redirect them to the member signup page
 			self.download_redirect()
 			return
 
@@ -465,7 +463,7 @@ class MagnatuneSource(RB.BrowserSource):
 				track_uri = RB.sanitize_uri_for_filesystem(track_uri)
 				RB.uri_create_parent_dirs(track_uri)
 
-				track_out = Gio.file_new_for_uri(track_uri).create(Gio.FileCreateFlags.NONE, None)
+				track_out = Gio.file_new_for_uri(track_uri).replace(None, False, Gio.FileCreateFlags.NONE, None)
 				if track_out is not None:
 					track_out.write(album.read(track), None)
 					track_out.close(None)
@@ -489,23 +487,19 @@ class MagnatuneSource(RB.BrowserSource):
 					     Gio.FileCreateFlags.PRIVATE|Gio.FileCreateFlags.REPLACE_DESTINATION,
 					     None)
 
-		try:
-			# For some reason, Gio.FileCopyFlags.OVERWRITE doesn't work for copy_async
-			dest.delete(None)
-		except:
-			pass
-
 		if self.__download_progress is None:
 			self.__download_progress = RB.TaskProgressSimple.new()
 			self.__download_progress.props.task_label = _("Downloading from Magnatune")
 			self.__download_progress.connect('cancel-task', self.cancel_downloads)
 			self.props.shell.props.task_list.add_task(self.__download_progress)
 
-		dl = RB.AsyncCopy()
-		dl.set_progress(download_progress, self)
-		dl.start(audio_dl_uri, dest.get_uri(), download_finished, self)
-		self.__downloads[audio_dl_uri] = (0, 0) # (current, total)
-		self.__copies[audio_dl_uri] = dl
+		# one async copy object per download
+		if audio_dl_uri not in self.__copies:
+			dl = RB.AsyncCopy()
+			dl.set_progress(download_progress, self)
+			dl.start(audio_dl_uri, dest.get_uri(), download_finished, self)
+			self.__downloads[audio_dl_uri] = (0, 0) # (current, total)
+			self.__copies[audio_dl_uri] = dl
 
 	def cancel_downloads(self, task):
 		for download in self.__copies.values():
@@ -516,12 +510,12 @@ class MagnatuneSource(RB.BrowserSource):
 	def playing_entry_changed(self, entry):
 		if not self.__db or not entry:
 			return
-		if entry.get_entry_type() != self.__db.entry_type_get_by_name("MagnatuneEntryType"):
+		if entry.get_entry_type() != self.__db.entry_type_get_by_name("magnatune"):
 			return
 
 		sku = self.__sku_dict[entry.get_string(RB.RhythmDBPropType.LOCATION)]
 		key = RB.ExtDBKey.create_storage("album", entry.get_string(RB.RhythmDBPropType.ALBUM))
 		key.add_field("artist", entry.get_string(RB.RhythmDBPropType.ARTIST))
-		self.__art_store.store_uri(key, self.__art_dict[sku])
+		self.__art_store.store_uri(key, RB.ExtDBSourceType.EMBEDDED, self.__art_dict[sku])
 
 GObject.type_register(MagnatuneSource)

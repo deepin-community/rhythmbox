@@ -27,9 +27,8 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifdef HAVE_CONFIG_H
 #include "config.h"
-#endif
+
 #include <math.h>
 #include <locale.h>
 #include <cairo/cairo.h>
@@ -624,7 +623,7 @@ static void rb_segmented_bar_render_strokes (RBSegmentedBar *bar,
 	cairo_pattern_t *seg_sep_dark = make_segment_gradient (height,
 							       0, 0, 0, 0.125);
 	gdouble seg_w = 20;
-	gdouble x;
+	gdouble x = 0.0;
 	if (seg_w > radius) {
 		x = seg_w;
 	} else {
@@ -646,7 +645,7 @@ static void rb_segmented_bar_render_strokes (RBSegmentedBar *bar,
 		x += seg_w;
 	}
 
-	draw_rounded_rectangle (context, 0.5, 0.5,
+	draw_rounded_rectangle (context, 0, 0,
 			       	width - 1, height - 1, radius);
 	cairo_set_source (context, stroke);
 	cairo_stroke (context);

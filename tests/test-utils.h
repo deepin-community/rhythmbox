@@ -29,10 +29,6 @@
 #ifndef __TEST_UTILS_H
 #define __TEST_UTILS_H
 
-#ifndef fail_if
-#define fail_if(expr, ...) fail_unless(!(expr), "Failure '"#expr"' occured")
-#endif
-
 /* yes.  really. */
 extern RhythmDB *db;
 
@@ -52,5 +48,7 @@ void test_rhythmdb_shutdown (void);
 void set_entry_string (RhythmDB *db, RhythmDBEntry *entry, RhythmDBPropType prop, const char *value);
 void set_entry_ulong (RhythmDB *db, RhythmDBEntry *entry, RhythmDBPropType prop, gulong value);
 void set_entry_hidden (RhythmDB *db, RhythmDBEntry *entry, gboolean hidden);
+
+gulong set_waiting_signal_with_callback (GObject *o, const char *name, GCallback callback, gpointer data);
 
 #endif /* __TEST_UTILS_H */
